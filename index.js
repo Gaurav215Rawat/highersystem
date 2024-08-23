@@ -265,7 +265,7 @@ client.connect()
 
 
   const sendMail = require('./mailConfig');
-// const sendSMS = require('./smsConfig');
+  const sendSMS = require('./smsConfig');
   const crypto = require('crypto'); // To generate random code
   
   // Route for user registration (signup)
