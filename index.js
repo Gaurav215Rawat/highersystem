@@ -293,9 +293,9 @@ client.connect()
       const emailHtml = `<h1>Email Verification</h1><p>Your verification code is: <strong>${emailVerificationCode}</strong></p>`;
       await sendMail(email, emailSubject, emailHtml);
   
-      // // Send SMS verification code
-      // const smsBody = `Your verification code is: ${smsVerificationCode}`;
-      // await sendSMS(phone_no, smsBody);
+      // Send SMS verification code
+      const smsBody = `Your verification code is: ${smsVerificationCode}`;
+      await sendSMS(phone_no, smsBody);
   
       res.status(201).json({
         message: 'User registered successfully. Please check your email and SMS for the verification codes.',
@@ -312,8 +312,8 @@ app.post('/verify', async (req, res) => {
   const { emailVerificationCode, smsVerificationCode } = req.body;
 
   try {
-    const query = 'SELECT * FROM users WHERE email_verification_code = $1';//AND sms_verification_code = $2
-    const result = await client.query(query, [emailVerificationCode]);//, smsVerificationCode
+    const query = 'SELECT * FROM users WHERE email_verification_code = $1 AND sms_verification_code = $2';//
+    const result = await client.query(query, [emailVerificationCode, smsVerificationCode]);//
 
     if (result.rows.length === 0) {
       return res.status(400).json({ error: 'Invalid verification codes' });
