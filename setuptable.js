@@ -13,9 +13,6 @@ DROP TABLE IF EXISTS users CASCADE;
       email VARCHAR(30) UNIQUE NOT NULL,
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
-      email_verification_code VARCHAR(6),
-      sms_verification_code VARCHAR(6),
-      is_verified BOOLEAN DEFAULT false,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
    );
 

@@ -199,9 +199,6 @@ const createTables = () => {
       email VARCHAR(30) UNIQUE NOT NULL,
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
-      email_verification_code VARCHAR(6),
-      sms_verification_code VARCHAR(6),
-      is_verified BOOLEAN DEFAULT false,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
    );
 
@@ -264,107 +261,64 @@ client.connect()
   });
 
 
-  const sendMail = require('./mailConfig');
-  const sendSMS = require('./smsConfig');
-  const crypto = require('crypto'); // To generate random code
-  
-  // Route for user registration (signup)
-  app.post('/signup', async (req, res) => {
-    const { first_name, last_name, email, phone_no, password, confirm_password } = req.body;
-  
-    if (password !== confirm_password) {
-      return res.status(400).json({ error: 'Passwords do not match' });
-    }
-  
-    try {
-      const emailVerificationCode = crypto.randomInt(100000, 999999).toString();
-      const smsVerificationCode = crypto.randomInt(100000, 999999).toString();
-  
-      const query = `
-        INSERT INTO users (first_name, last_name, email, phone_no, password, email_verification_code, sms_verification_code)
-        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`;
-      const values = [first_name, last_name, email, phone_no, password, emailVerificationCode, smsVerificationCode];
-  
-      const result = await client.query(query, values);
-      const newUser = result.rows[0];
-  
-      // Send email verification code
-      const emailSubject = 'Verify Your Email';
-      const emailHtml = `<h1>Email Verification</h1><p>Your verification code is: <strong>${emailVerificationCode}</strong></p>`;
-      await sendMail(email, emailSubject, emailHtml);
-  
-      // Send SMS verification code
-      const smsBody = `Your verification code is: ${smsVerificationCode}`;
-      await sendSMS(phone_no, smsBody);
-  
-      res.status(201).json({
-        message: 'User registered successfully. Please check your email and SMS for the verification codes.',
-        userId: newUser.user_id,
-      });
-    } catch (err) {
-      console.error('Error registering user:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
+// Route for user registration (signup)
+app.post('/signup', async (req, res) => {
+  const { first_name, last_name, email, phone_no, password, confirm_password } = req.body;
 
-// Route for verification
-app.post('/verify', async (req, res) => {
-  const { emailVerificationCode, smsVerificationCode } = req.body;
+  if (password !== confirm_password) {
+    return res.status(400).json({ error: 'Passwords do not match' });
+  }
 
   try {
-    const query = 'SELECT * FROM users WHERE email_verification_code = $1 AND sms_verification_code = $2';//
-    const result = await client.query(query, [emailVerificationCode, smsVerificationCode]);//
+    const query = `
+      INSERT INTO users (first_name, last_name, email, phone_no, password)
+      VALUES ($1, $2, $3, $4, $5) RETURNING *`;
+    const values = [first_name, last_name, email, phone_no, password];
 
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid verification codes' });
-    }
+    const result = await client.query(query, values);
+    const newUser = result.rows[0];
 
-    const userId = result.rows[0].user_id;
-    const updateQuery = 'UPDATE users SET is_verified = true, email_verification_code = NULL, sms_verification_code = NULL WHERE user_id = $1';
-    await client.query(updateQuery, [userId]);
-
-    res.json({ message: 'Verification successful. You can now log in.' });
+    res.status(201).json({
+      message: 'User registered successfully.',
+      userId: newUser.user_id,
+    });
   } catch (err) {
-    console.error('Error verifying codes:', err);
+    console.error('Error registering user:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 
 // Route for user login
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Find the user by emails
+    // Find the user by email
     const query = 'SELECT * FROM users WHERE email = $1';
     const result = await client.query(query, [email]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'User not found. Please check the email entered.' });
     }
 
     const user = result.rows[0];
 
-    // Check if the user's email is verified
-    if (!user.is_verified) {
-      return res.status(403).json({ error: 'Email not verified. Please check your email for the verification code.' });
-    }
-
     // Compare the password directly (since it's stored as plain text)
     if (password !== user.password) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      return res.status(400).json({ error: 'Incorrect password. Please try again.' });
     }
 
     // If credentials are correct, respond with a success message
-    res.json({ message: 'Login successful',
-      userId: user.user_id,// Send userId as part of the response
-       });
+    res.json({
+      message: 'Login successful',
+      userId: user.user_id,
+    });
   } catch (err) {
     console.error('Error logging in:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 //  // Route for user registration (signup)
 // app.post('/signup', async (req, res) => {
