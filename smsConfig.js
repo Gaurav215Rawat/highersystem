@@ -12,7 +12,7 @@ const sendSMS = async (to, message) => {
     //sender_id: 'FSTSMS',
     message: message,
     language: 'english',
-    route: 'q',
+    route: '',
     numbers:to,  // Numbers should be a comma-separated string
   };
 
