@@ -8,6 +8,7 @@ const { body, validationResult } = require('express-validator');
 const config = require('./config');
 const app = express();
 const port = 3000;
+const jwt=require("jsonwebtoken")
 
 // Enable CORS for all routes
 app.use(cors({ origin: 'http://localhost:3000' }));
@@ -149,10 +150,15 @@ app.post('/login', async (req, res) => {
     if (!match) {
       return res.status(400).json({ error: 'Incorrect password. Please try again.' });
     }
-
+    const payload={
+      id:user.user_id,
+email:user.email
+    }
+const token=jwt.sign(payload,"mysecret")
     res.json({
       message: 'Login successful',
       userId: user.user_id,
+      token:token
     });
   } catch (err) {
     console.error('Error logging in:', err);
