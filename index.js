@@ -132,6 +132,31 @@ app.post('/signup', [
   }
 });
 
+
+// Use the same secret key for signing and verifying the tokens
+const JWT_SECRET = "mysecret";
+
+// Route to verify the token
+app.post('/verify-token', (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ error: 'Token is required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    res.json({
+      message: 'Token is valid',
+      userId: decoded.id,
+      email: decoded.email
+    });
+  });
+});
+
 // Route for user login
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -154,7 +179,7 @@ app.post('/login', async (req, res) => {
       id:user.user_id,
 email:user.email
     }
-const token=jwt.sign(payload,"mysecret")
+const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
     res.json({
       message: 'Login successful',
       userId: user.user_id,
