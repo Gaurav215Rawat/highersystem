@@ -1,5 +1,5 @@
 const { Client } = require('pg');
-const config = require('./dbConfig');
+const config = require('./config');
 
 const createTablesQuery = `
 DROP TABLE IF EXISTS contacts;
