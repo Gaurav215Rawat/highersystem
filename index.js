@@ -66,8 +66,8 @@ const createTables = () => {
       pincode VARCHAR(10) NOT NULL,
       department VARCHAR(100) NOT NULL,
       designation VARCHAR(100),
-      date_of_start DATE,
-      date_of_end DATE,
+      date_of_start text,
+      date_of_end text,
       status VARCHAR(10) CHECK (status IN ('active', 'inactive')),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
