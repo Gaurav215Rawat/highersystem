@@ -5,10 +5,10 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const moment = require('moment');
 const { body, validationResult } = require('express-validator');
+const jwt = require("jsonwebtoken");
 const config = require('./config');
 const app = express();
 const port = 3000;
-const jwt=require("jsonwebtoken")
 
 // Enable CORS for all routes
 app.use(cors({ origin: 'http://localhost:3000' }));
@@ -33,6 +33,7 @@ const createTables = () => {
       email VARCHAR(30) UNIQUE NOT NULL,
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
+      role INTEGER DEFAULT 2, -- 0: Admin, 1: Editor, 2: Viewer (default is 2)
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -66,8 +67,8 @@ const createTables = () => {
       pincode VARCHAR(10) NOT NULL,
       department VARCHAR(100) NOT NULL,
       designation VARCHAR(100),
-      date_of_start text,
-      date_of_end text,
+      date_of_start TEXT,
+      date_of_end TEXT,
       status VARCHAR(10) CHECK (status IN ('active', 'inactive')),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -94,6 +95,19 @@ client.connect()
     console.error('Error initializing the application:', err.stack);
   });
 
+// Middleware to check user role
+const checkRole = (roles) => {
+  return (req, res, next) => {
+    const { role } = req.user; // Assuming req.user contains the user's data after token verification
+
+    if (roles.includes(role)) {
+      next(); // User has permission, proceed to the route
+    } else {
+      res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
+    }
+  };
+};
+
 // Route for user registration (signup)
 app.post('/signup', [
   body('email').isEmail().withMessage('Invalid email address'),
@@ -110,14 +124,14 @@ app.post('/signup', [
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { first_name, last_name, email, phone_no, password } = req.body;
+  const { first_name, last_name, email, phone_no, password, role } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const query = `
-      INSERT INTO users (first_name, last_name, email, phone_no, password)
-      VALUES ($1, $2, $3, $4, $5) RETURNING *`;
-    const values = [first_name, last_name, email, phone_no, hashedPassword];
+      INSERT INTO users (first_name, last_name, email, phone_no, password, role)
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
+    const values = [first_name, last_name, email, phone_no, hashedPassword, role || 2];
 
     const result = await client.query(query, values);
     const newUser = result.rows[0];
@@ -131,7 +145,6 @@ app.post('/signup', [
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 
 // Use the same secret key for signing and verifying the tokens
 const JWT_SECRET = "mysecret";
@@ -177,7 +190,8 @@ app.post('/login', async (req, res) => {
     }
     const payload={
       id:user.user_id,
-email:user.email
+      email:user.email,
+      role: user.role
     }
 const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
     res.json({
@@ -192,7 +206,7 @@ const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
 });
 
 // Create a new customer
-app.post('/customers', (req, res) => {
+app.post('/customers', checkRole([0, 1]), (req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
   const query = `
@@ -215,7 +229,7 @@ app.post('/customers', (req, res) => {
 });
 
 // Get all customers
-app.get('/all-customers', (req, res) => {
+app.get('/all-customers', checkRole([0, 1, 2]), (req, res) => {
   client.query('SELECT * FROM customers')
     .then(result => res.json(result.rows))
     .catch(err => {
@@ -225,7 +239,7 @@ app.get('/all-customers', (req, res) => {
 });
 
 // Get a customer by ID
-app.get('/customers/:id', (req, res) => {
+app.get('/customers/:id', checkRole([0, 1, 2]), (req, res) => {
   const id = req.params.id;
   client.query('SELECT * FROM customers WHERE customer_id = $1', [id])
     .then(result => {
@@ -242,7 +256,7 @@ app.get('/customers/:id', (req, res) => {
 });
 
 // Update a customer by ID
-app.put('/customers/:id', (req, res) => {
+app.put('/customers/:id', checkRole([0, 1]), (req, res) => {
   const id = req.params.id;
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
@@ -267,7 +281,7 @@ app.put('/customers/:id', (req, res) => {
 });
 
 // Delete a customer by ID
-app.delete('/customers/:id', (req, res) => {
+app.delete('/customers/:id', checkRole([0]), (req, res) => {
   const id = req.params.id;
   const query = 'DELETE FROM customers WHERE customer_id = $1 RETURNING *';
   client.query(query, [id])
@@ -285,7 +299,7 @@ app.delete('/customers/:id', (req, res) => {
 });
 
 // Create a new contact
-app.post('/contacts', (req, res) => {
+app.post('/contacts', checkRole([0, 1]), (req, res) => {
   const { customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_end, status } = req.body;
   const date_of_start = req.body.date_of_start || moment().format('YYYY-MM-DD');
 
@@ -309,7 +323,7 @@ app.post('/contacts', (req, res) => {
 });
 
 // Get all contacts
-app.get('/all-contacts', (req, res) => {
+app.get('/all-contacts', checkRole([0, 1, 2]), (req, res) => {
   client.query('SELECT * FROM contacts')
     .then(result => res.json(result.rows))
     .catch(err => {
@@ -319,7 +333,7 @@ app.get('/all-contacts', (req, res) => {
 });
 
 // Get a contact by ID
-app.get('/contacts/:id', (req, res) => {
+app.get('/contacts/:id', checkRole([0, 1, 2]), (req, res) => {
   const id = req.params.id;
   client.query('SELECT * FROM contacts WHERE contact_id = $1', [id])
     .then(result => {
@@ -336,7 +350,7 @@ app.get('/contacts/:id', (req, res) => {
 });
 
 // Update a contact by ID
-app.put('/contacts/:id', (req, res) => {
+app.put('/contacts/:id', checkRole([0, 1]), (req, res) => {
   const id = req.params.id;
   const { customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status } = req.body;
 
@@ -361,7 +375,7 @@ app.put('/contacts/:id', (req, res) => {
 });
 
 // Delete a contact by ID
-app.delete('/contacts/:id', (req, res) => {
+app.delete('/contacts/:id', checkRole([0]), (req, res) => {
   const id = req.params.id;
   const query = 'DELETE FROM contacts WHERE contact_id = $1 RETURNING *';
   client.query(query, [id])
