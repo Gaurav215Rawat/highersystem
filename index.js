@@ -33,7 +33,7 @@ const createTables = () => {
       email VARCHAR(30) UNIQUE NOT NULL,
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
-      role INTEGER DEFAULT 2, -- 0: Admin, 1: Editor, 2: Viewer (default is 2)
+      role INTEGER DEFAULT 2,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
