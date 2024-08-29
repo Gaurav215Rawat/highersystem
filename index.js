@@ -205,8 +205,8 @@ const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
   }
 });
 
-// Create a new customer
-app.post('/customers', checkRole([0, 1]), (req, res) => {
+// Create a new customer  checkRole([0, 1]), 
+app.post('/customers',(req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
   const query = `
