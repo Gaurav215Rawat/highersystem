@@ -96,28 +96,29 @@ client.connect()
   });
 
 
-  // Middleware to verify JWT and attach user info to req.user
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+//   // Middleware to verify JWT and attach user info to req.user
+// const authenticateToken = (req, res, next) => {
+//   const authHeader = req.headers['authorization'];
+//   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).json({ error: 'Token is missing' });
-  }
+//   if (!token) {
+//     return res.status(401).json({ error: 'Token is missing' });
+//   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
-    }
+//   jwt.verify(token, JWT_SECRET, (err, user) => {
+//     if (err) {
+//       return res.status(403).json({ error: 'Invalid or expired token' });
+//     }
 
-    req.user = user; // Attach the decoded token payload to req.user
-    next();
-  });
-};
+//     req.user = user; // Attach the decoded token payload to req.user
+//     next();
+//   });
+// };
 
 // Middleware to check user role
 const checkRole = (roles) => {
   return (req, res, next) => {
+    req.user=user;
     const { role } = req.user; // Assuming req.user contains the user's data after token verification
 
     if (roles.includes(role)) {
@@ -226,7 +227,7 @@ const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
 });
 
 // Create a new customer  checkRole([0, 1]), 
-app.post('/customers',authenticateToken, checkRole([0, 1]),(req, res) => {
+app.post('/customers',checkRole([0, 1]),(req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
   const query = `
@@ -249,7 +250,7 @@ app.post('/customers',authenticateToken, checkRole([0, 1]),(req, res) => {
 });
 
 // Get all customers (use authenticateToken before checkRole)
-app.get('/all-customers', authenticateToken, checkRole([0, 1, 2]), (req, res) => {
+app.get('/all-customers', checkRole([0, 1, 2]), (req, res) => {
   client.query('SELECT * FROM customers')
     .then(result => res.json(result.rows))
     .catch(err => {
