@@ -226,7 +226,7 @@ const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
 });
 
 // Create a new customer  checkRole([0, 1]), 
-app.post('/customers',(req, res) => {
+app.post('/customers',authenticateToken, checkRole([0, 1]),(req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
   const query = `
@@ -260,7 +260,7 @@ app.get('/all-customers', authenticateToken, checkRole([0, 1, 2]), (req, res) =>
 
 
 // Get a customer by ID
-app.get('/customers/:id', checkRole([0, 1, 2]), (req, res) => {
+app.get('/customers/:id',authenticateToken, checkRole([0, 1, 2]), (req, res) => {
   const id = req.params.id;
   client.query('SELECT * FROM customers WHERE customer_id = $1', [id])
     .then(result => {
@@ -277,7 +277,7 @@ app.get('/customers/:id', checkRole([0, 1, 2]), (req, res) => {
 });
 
 // Update a customer by ID
-app.put('/customers/:id', checkRole([0, 1]), (req, res) => {
+app.put('/customers/:id', authenticateToken,checkRole([0, 1]), (req, res) => {
   const id = req.params.id;
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
@@ -302,7 +302,7 @@ app.put('/customers/:id', checkRole([0, 1]), (req, res) => {
 });
 
 // Delete a customer by ID
-app.delete('/customers/:id', checkRole([0]), (req, res) => {
+app.delete('/customers/:id',authenticateToken, checkRole([0]), (req, res) => {
   const id = req.params.id;
   const query = 'DELETE FROM customers WHERE customer_id = $1 RETURNING *';
   client.query(query, [id])
@@ -320,7 +320,7 @@ app.delete('/customers/:id', checkRole([0]), (req, res) => {
 });
 
 // Create a new contact
-app.post('/contacts', checkRole([0, 1]), (req, res) => {
+app.post('/contacts',authenticateToken, checkRole([0, 1]), (req, res) => {
   const { customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_end, status } = req.body;
   const date_of_start = req.body.date_of_start || moment().format('YYYY-MM-DD');
 
@@ -344,7 +344,7 @@ app.post('/contacts', checkRole([0, 1]), (req, res) => {
 });
 
 // Get all contacts
-app.get('/all-contacts', checkRole([0, 1, 2]), (req, res) => {
+app.get('/all-contacts',authenticateToken, checkRole([0, 1, 2]), (req, res) => {
   client.query('SELECT * FROM contacts')
     .then(result => res.json(result.rows))
     .catch(err => {
@@ -354,7 +354,7 @@ app.get('/all-contacts', checkRole([0, 1, 2]), (req, res) => {
 });
 
 // Get a contact by ID
-app.get('/contacts/:id', checkRole([0, 1, 2]), (req, res) => {
+app.get('/contacts/:id',authenticateToken, checkRole([0, 1, 2]), (req, res) => {
   const id = req.params.id;
   client.query('SELECT * FROM contacts WHERE contact_id = $1', [id])
     .then(result => {
@@ -371,7 +371,7 @@ app.get('/contacts/:id', checkRole([0, 1, 2]), (req, res) => {
 });
 
 // Update a contact by ID
-app.put('/contacts/:id', checkRole([0, 1]), (req, res) => {
+app.put('/contacts/:id',authenticateToken, checkRole([0, 1]), (req, res) => {
   const id = req.params.id;
   const { customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status } = req.body;
 
@@ -396,7 +396,7 @@ app.put('/contacts/:id', checkRole([0, 1]), (req, res) => {
 });
 
 // Delete a contact by ID
-app.delete('/contacts/:id', checkRole([0]), (req, res) => {
+app.delete('/contacts/:id',authenticateToken, checkRole([0]), (req, res) => {
   const id = req.params.id;
   const query = 'DELETE FROM contacts WHERE contact_id = $1 RETURNING *';
   client.query(query, [id])
