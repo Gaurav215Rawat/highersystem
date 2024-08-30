@@ -95,6 +95,15 @@ client.connect()
     console.error('Error initializing the application:', err.stack);
   });
 
+// Get all users 
+app.get('/users',(req, res) => {
+  client.query('SELECT * FROM users')
+    .then(result => res.json(result.rows))
+    .catch(err => {
+      console.error('Error fetching customers:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
 
   // Middleware to verify JWT and attach user info to req.user
 const authenticateToken = (req, res, next) => {
