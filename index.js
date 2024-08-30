@@ -132,12 +132,6 @@ const checkRole = (roles) => {
 app.post('/signup', [
   body('email').isEmail().withMessage('Invalid email address'),
   body('password').isLength({ min: 5 }).withMessage('Password must be at least 5 characters long'),
-  body('confirm_password').custom((value, { req }) => {
-    if (value !== req.body.password) {
-      throw new Error('Passwords do not match');
-    }
-    return true;
-  })
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -226,7 +220,7 @@ const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
 });
 
 // Create a new customer  checkRole([0, 1]), 
-app.post('/customers',authenticateToken, checkRole([0, 1, 2]),(req, res) => {
+app.post('/customers',authenticateToken, checkRole([0, 1]),(req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
   const query = `
