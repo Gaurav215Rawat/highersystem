@@ -95,6 +95,26 @@ client.connect()
     console.error('Error initializing the application:', err.stack);
   });
 
+
+  // Middleware to verify JWT and attach user info to req.user
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token is missing' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    req.user = user; // Attach the decoded token payload to req.user
+    next();
+  });
+};
+
 // Middleware to check user role
 const checkRole = (roles) => {
   return (req, res, next) => {
@@ -228,8 +248,8 @@ app.post('/customers',(req, res) => {
     });
 });
 
-// Get all customers
-app.get('/all-customers', checkRole([0, 1, 2]), (req, res) => {
+// Get all customers (use authenticateToken before checkRole)
+app.get('/all-customers', authenticateToken, checkRole([0, 1, 2]), (req, res) => {
   client.query('SELECT * FROM customers')
     .then(result => res.json(result.rows))
     .catch(err => {
@@ -237,6 +257,7 @@ app.get('/all-customers', checkRole([0, 1, 2]), (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
 
 // Get a customer by ID
 app.get('/customers/:id', checkRole([0, 1, 2]), (req, res) => {
