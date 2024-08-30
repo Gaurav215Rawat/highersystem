@@ -118,7 +118,6 @@ const authenticateToken = (req, res, next) => {
 // Middleware to check user role
 const checkRole = (roles) => {
   return (req, res, next) => {
-    req.user=user;
     const { role } = req.user; // Assuming req.user contains the user's data after token verification
 
     if (roles.includes(role)) {
@@ -227,7 +226,7 @@ const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
 });
 
 // Create a new customer  checkRole([0, 1]), 
-app.post('/customers',checkRole([0, 1]),(req, res) => {
+app.post('/customers',authenticateToken, checkRole([0, 1, 2]),(req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
   const query = `
@@ -250,7 +249,7 @@ app.post('/customers',checkRole([0, 1]),(req, res) => {
 });
 
 // Get all customers (use authenticateToken before checkRole)
-app.get('/all-customers', checkRole([0, 1, 2]), (req, res) => {
+app.get('/all-customers', authenticateToken, checkRole([0, 1, 2]), (req, res) => {
   client.query('SELECT * FROM customers')
     .then(result => res.json(result.rows))
     .catch(err => {
