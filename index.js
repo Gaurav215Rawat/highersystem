@@ -96,24 +96,24 @@ client.connect()
   });
 
 
-//   // Middleware to verify JWT and attach user info to req.user
-// const authenticateToken = (req, res, next) => {
-//   const authHeader = req.headers['authorization'];
-//   const token = authHeader && authHeader.split(' ')[1];
+  // Middleware to verify JWT and attach user info to req.user
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-//   if (!token) {
-//     return res.status(401).json({ error: 'Token is missing' });
-//   }
+  if (!token) {
+    return res.status(401).json({ error: 'Token is missing' });
+  }
 
-//   jwt.verify(token, JWT_SECRET, (err, user) => {
-//     if (err) {
-//       return res.status(403).json({ error: 'Invalid or expired token' });
-//     }
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
 
-//     req.user = user; // Attach the decoded token payload to req.user
-//     next();
-//   });
-// };
+    req.user = user; // Attach the decoded token payload to req.user
+    next();
+  });
+};
 
 // Middleware to check user role
 const checkRole = (roles) => {
