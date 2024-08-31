@@ -268,6 +268,16 @@ app.post('/login', async (req, res) => {
 });
 
 // Get all customers (use authenticateToken before checkRole)
+app.get('/access', (req, res) => {
+  client.query('SELECT * FROM api_access')
+    .then(result => res.json(result.rows))
+    .catch(err => {
+      console.error('Error fetching customers:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
+
+// Get all customers (use authenticateToken before checkRole)
 app.get('/users', (req, res) => {
   client.query('SELECT * FROM users')
     .then(result => res.json(result.rows))
