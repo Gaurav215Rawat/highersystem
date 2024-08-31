@@ -25,15 +25,15 @@ const createTables = () => {
     DROP TABLE IF EXISTS contacts CASCADE;
     DROP TABLE IF EXISTS customers CASCADE;
     DROP TABLE IF EXISTS users CASCADE;
+    DROP TABLE IF EXISTS api_access CASCADE;
 
-    CREATE TABLE users (
+    CREATE TABLE IF NOT EXISTS users (
       user_id SERIAL PRIMARY KEY,
       first_name VARCHAR(20) NOT NULL,
       last_name VARCHAR(20) NOT NULL,
       email VARCHAR(30) UNIQUE NOT NULL,
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
-      role INTEGER DEFAULT 2,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -73,6 +73,12 @@ const createTables = () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS api_access (
+      access_id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+      api_name VARCHAR(100) NOT NULL
+    );
   `;
 
   return client.query(createTablesQuery);
@@ -95,17 +101,7 @@ client.connect()
     console.error('Error initializing the application:', err.stack);
   });
 
-// Get all users 
-app.get('/users',(req, res) => {
-  client.query('SELECT * FROM users')
-    .then(result => res.json(result.rows))
-    .catch(err => {
-      console.error('Error fetching customers:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
-
-  // Middleware to verify JWT and attach user info to req.user
+// Middleware to verify JWT and attach user info to req.user
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -124,16 +120,24 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Middleware to check user role
-const checkRole = (roles) => {
+// Middleware to check user access to a specific API
+const checkAccess = (apiName) => {
   return (req, res, next) => {
-    const { role } = req.user; // Assuming req.user contains the user's data after token verification
+    const { user_id } = req.user;
 
-    if (roles.includes(role)) {
-      next(); // User has permission, proceed to the route
-    } else {
-      res.status(403).json({ error: 'Access denied. Insufficient permissions.' });
-    }
+    const query = `SELECT * FROM api_access WHERE user_id = $1 AND api_name = $2`;
+    client.query(query, [user_id, apiName])
+      .then(result => {
+        if (result.rows.length > 0) {
+          next(); // User has access, proceed to the route
+        } else {
+          res.status(403).json({ error: 'Access denied. You do not have permission to access this API.' });
+        }
+      })
+      .catch(err => {
+        console.error('Error checking API access:', err);
+        res.status(500).json({ error: 'Internal server error' });
+      });
   };
 };
 
@@ -147,17 +151,24 @@ app.post('/signup', [
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { first_name, last_name, email, phone_no, password, role } = req.body;
+  const { first_name, last_name, email, phone_no, password, api_access } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const query = `
-      INSERT INTO users (first_name, last_name, email, phone_no, password, role)
-      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
-    const values = [first_name, last_name, email, phone_no, hashedPassword, role || 2];
+      INSERT INTO users (first_name, last_name, email, phone_no, password)
+      VALUES ($1, $2, $3, $4, $5) RETURNING *`;
+    const values = [first_name, last_name, email, phone_no, hashedPassword];
 
     const result = await client.query(query, values);
     const newUser = result.rows[0];
+
+    if (api_access && api_access.length > 0) {
+      const accessQuery = `
+        INSERT INTO api_access (user_id, api_name)
+        VALUES ${api_access.map((_, i) => `(${newUser.user_id}, $${i + 1})`).join(', ')}`;
+      await client.query(accessQuery, api_access);
+    }
 
     res.status(201).json({
       message: 'User registered successfully.',
@@ -165,6 +176,32 @@ app.post('/signup', [
     });
   } catch (err) {
     console.error('Error registering user:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Route to update user API access
+app.put('/users/:id/access', authenticateToken, async (req, res) => {
+  const userId = req.params.id;
+  const { api_access } = req.body;
+
+  try {
+    // Delete existing access
+    await client.query(`DELETE FROM api_access WHERE user_id = $1`, [userId]);
+
+    // Insert new access
+    if (api_access && api_access.length > 0) {
+      const accessQuery = `
+        INSERT INTO api_access (user_id, api_name)
+        VALUES ${api_access.map((_, i) => `(${userId}, $${i + 1})`).join(', ')}`;
+      await client.query(accessQuery, api_access);
+    }
+
+    res.status(200).json({
+      message: 'API access updated successfully.'
+    });
+  } catch (err) {
+    console.error('Error updating API access:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -211,16 +248,18 @@ app.post('/login', async (req, res) => {
     if (!match) {
       return res.status(400).json({ error: 'Incorrect password. Please try again.' });
     }
-    const payload={
-      id:user.user_id,
-      email:user.email,
-      role: user.role
-    }
-const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
+
+    const payload = {
+      id: user.user_id,
+      email: user.email
+    };
+
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+
     res.json({
       message: 'Login successful',
       userId: user.user_id,
-      token:token
+      token: token
     });
   } catch (err) {
     console.error('Error logging in:', err);
@@ -228,32 +267,10 @@ const token=jwt.sign(payload,JWT_SECRET,{ expiresIn: '1h' })
   }
 });
 
-// Create a new customer  checkRole([0, 1]), 
-app.post('/customers',authenticateToken, checkRole([0, 1]),(req, res) => {
-  const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
-  const query = `
-    INSERT INTO customers (customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode) 
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`;
-  const values = [customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode];
-
-  client.query(query, values)
-    .then(result => {
-      const newCustomer = result.rows[0];
-      res.status(201).json({
-        message: 'Customer created successfully',
-        customer: newCustomer
-      });
-    })
-    .catch(err => {
-      console.error('Error inserting customer:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
-
-// Get all customers (use authenticateToken before checkRole)
-app.get('/all-customers', authenticateToken, checkRole([0, 1, 2]), (req, res) => {
-  client.query('SELECT * FROM customers')
+// Get all users 
+app.get('/users',(req, res) => {
+  client.query('SELECT * FROM users')
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
@@ -261,157 +278,142 @@ app.get('/all-customers', authenticateToken, checkRole([0, 1, 2]), (req, res) =>
     });
 });
 
-
-// Get a customer by ID
-app.get('/customers/:id',authenticateToken, checkRole([0, 1, 2]), (req, res) => {
-  const id = req.params.id;
-  client.query('SELECT * FROM customers WHERE customer_id = $1', [id])
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json(result.rows[0]);
-      } else {
-        res.status(404).json({ error: 'Customer not found' });
-      }
-    })
-    .catch(err => {
-      console.error('Error fetching customer:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
-
-// Update a customer by ID
-app.put('/customers/:id', authenticateToken,checkRole([0, 1]), (req, res) => {
-  const id = req.params.id;
+// Route to create a new customer
+app.post('/customers', authenticateToken, checkAccess('create_customer'), async (req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
-  const query = `
-    UPDATE customers
-    SET customer_name = $1, gst_number = $2, landline_num = $3, email_id = $4, pan_no = $5, tan_number = $6, address = $7, city = $8, state = $9, country = $10, pincode = $11, updated_at = CURRENT_TIMESTAMP
-    WHERE customer_id = $12 RETURNING *`;
-  const values = [customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode, id];
+  try {
+    const query = `
+      INSERT INTO customers (customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`;
+    const values = [customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode];
 
-  client.query(query, values)
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json(result.rows[0]);
-      } else {
-        res.status(404).json({ error: 'Customer not found' });
-      }
-    })
-    .catch(err => {
-      console.error('Error updating customer:', err);
-      res.status(500).json({ error: 'Internal server error' });
+    const result = await client.query(query, values);
+    const newCustomer = result.rows[0];
+
+    res.status(201).json({
+      message: 'Customer created successfully.',
+      customer: newCustomer
     });
+  } catch (err) {
+    console.error('Error creating customer:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-// Delete a customer by ID
-app.delete('/customers/:id',authenticateToken, checkRole([0]), (req, res) => {
-  const id = req.params.id;
-  const query = 'DELETE FROM customers WHERE customer_id = $1 RETURNING *';
-  client.query(query, [id])
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json({ message: 'Customer deleted successfully', customer: result.rows[0] });
-      } else {
-        res.status(404).json({ error: 'Customer not found' });
-      }
-    })
-    .catch(err => {
-      console.error('Error deleting customer:', err);
-      res.status(500).json({ error: 'Internal server error' });
+// Route to update customer details
+app.put('/customers/:id', authenticateToken, checkAccess('update_customer'), async (req, res) => {
+  const customerId = req.params.id;
+  const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
+
+  try {
+    const query = `
+      UPDATE customers
+      SET customer_name = $1, gst_number = $2, landline_num = $3, email_id = $4, pan_no = $5, tan_number = $6, address = $7, city = $8, state = $9, country = $10, pincode = $11, updated_at = CURRENT_TIMESTAMP
+      WHERE customer_id = $12 RETURNING *`;
+    const values = [customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode, customerId];
+
+    const result = await client.query(query, values);
+    const updatedCustomer = result.rows[0];
+
+    res.status(200).json({
+      message: 'Customer updated successfully.',
+      customer: updatedCustomer
     });
+  } catch (err) {
+    console.error('Error updating customer:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-// Create a new contact
-app.post('/contacts',authenticateToken, checkRole([0, 1]), (req, res) => {
-  const { customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_end, status } = req.body;
-  const date_of_start = req.body.date_of_start || moment().format('YYYY-MM-DD');
+// Route to delete a customer
+app.delete('/customers/:id', authenticateToken, checkAccess('delete_customer'), async (req, res) => {
+  const customerId = req.params.id;
 
-  const query = `
-    INSERT INTO contacts (customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`;
-  const values = [customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status];
+  try {
+    const query = `DELETE FROM customers WHERE customer_id = $1 RETURNING *`;
+    const result = await client.query(query, [customerId]);
 
-  client.query(query, values)
-    .then(result => {
-      const newContact = result.rows[0];
-      res.status(201).json({
-        message: 'Contact created successfully',
-        contact: newContact
-      });
-    })
-    .catch(err => {
-      console.error('Error inserting contact:', err);
-      res.status(500).json({ error: 'Internal server error' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    res.status(200).json({
+      message: 'Customer deleted successfully.',
+      customer: result.rows[0]
     });
+  } catch (err) {
+    console.error('Error deleting customer:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-// Get all contacts
-app.get('/all-contacts',authenticateToken, checkRole([0, 1, 2]), (req, res) => {
-  client.query('SELECT * FROM contacts')
-    .then(result => res.json(result.rows))
-    .catch(err => {
-      console.error('Error fetching contacts:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
-
-// Get a contact by ID
-app.get('/contacts/:id',authenticateToken, checkRole([0, 1, 2]), (req, res) => {
-  const id = req.params.id;
-  client.query('SELECT * FROM contacts WHERE contact_id = $1', [id])
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json(result.rows[0]);
-      } else {
-        res.status(404).json({ error: 'Contact not found' });
-      }
-    })
-    .catch(err => {
-      console.error('Error fetching contact:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
-
-// Update a contact by ID
-app.put('/contacts/:id',authenticateToken, checkRole([0, 1]), (req, res) => {
-  const id = req.params.id;
+// Route to create a new contact
+app.post('/contacts', authenticateToken, checkAccess('create_contact'), async (req, res) => {
   const { customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status } = req.body;
 
-  const query = `
-    UPDATE contacts
-    SET customer_id = $1, contact_person = $2, phone_num = $3, email_id = $4, address = $5, city = $6, state = $7, country = $8, pincode = $9, department = $10, designation = $11, date_of_start = $12, date_of_end = $13, status = $14, updated_at = CURRENT_TIMESTAMP
-    WHERE contact_id = $15 RETURNING *`;
-  const values = [customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status, id];
+  try {
+    const query = `
+      INSERT INTO contacts (customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`;
+    const values = [customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status];
 
-  client.query(query, values)
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json(result.rows[0]);
-      } else {
-        res.status(404).json({ error: 'Contact not found' });
-      }
-    })
-    .catch(err => {
-      console.error('Error updating contact:', err);
-      res.status(500).json({ error: 'Internal server error' });
+    const result = await client.query(query, values);
+    const newContact = result.rows[0];
+
+    res.status(201).json({
+      message: 'Contact created successfully.',
+      contact: newContact
     });
+  } catch (err) {
+    console.error('Error creating contact:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-// Delete a contact by ID
-app.delete('/contacts/:id',authenticateToken, checkRole([0]), (req, res) => {
-  const id = req.params.id;
-  const query = 'DELETE FROM contacts WHERE contact_id = $1 RETURNING *';
-  client.query(query, [id])
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json({ message: 'Contact deleted successfully', contact: result.rows[0] });
-      } else {
-        res.status(404).json({ error: 'Contact not found' });
-      }
-    })
-    .catch(err => {
-      console.error('Error deleting contact:', err);
-      res.status(500).json({ error: 'Internal server error' });
+// Route to update contact details
+app.put('/contacts/:id', authenticateToken, checkAccess('update_contact'), async (req, res) => {
+  const contactId = req.params.id;
+  const { contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status } = req.body;
+
+  try {
+    const query = `
+      UPDATE contacts
+      SET contact_person = $1, phone_num = $2, email_id = $3, address = $4, city = $5, state = $6, country = $7, pincode = $8, department = $9, designation = $10, date_of_start = $11, date_of_end = $12, status = $13, updated_at = CURRENT_TIMESTAMP
+      WHERE contact_id = $14 RETURNING *`;
+    const values = [contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status, contactId];
+
+    const result = await client.query(query, values);
+    const updatedContact = result.rows[0];
+
+    res.status(200).json({
+      message: 'Contact updated successfully.',
+      contact: updatedContact
     });
+  } catch (err) {
+    console.error('Error updating contact:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Route to delete a contact
+app.delete('/contacts/:id', authenticateToken, checkAccess('delete_contact'), async (req, res) => {
+  const contactId = req.params.id;
+
+  try {
+    const query = `DELETE FROM contacts WHERE contact_id = $1 RETURNING *`;
+    const result = await client.query(query, [contactId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+
+    res.status(200).json({
+      message: 'Contact deleted successfully.',
+      contact: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Error deleting contact:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
