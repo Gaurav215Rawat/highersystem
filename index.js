@@ -27,7 +27,7 @@ const createTables = () => {
     DROP TABLE IF EXISTS users CASCADE;
     DROP TABLE IF EXISTS api_access CASCADE;
 
-    CREATE TABLE  IF NOT EXISTS users (
+    CREATE TABLE users (
       user_id SERIAL PRIMARY KEY,
       first_name VARCHAR(20) NOT NULL,
       last_name VARCHAR(20) NOT NULL,
@@ -37,7 +37,7 @@ const createTables = () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE  IF NOT EXISTS customers (
+    CREATE TABLE customers (
       customer_id SERIAL PRIMARY KEY,
       customer_name VARCHAR(100) NOT NULL,
       gst_number VARCHAR(15),
@@ -54,7 +54,7 @@ const createTables = () => {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE  IF NOT EXISTS contacts (
+    CREATE TABLE contacts (
       contact_id SERIAL PRIMARY KEY,
       customer_id INTEGER REFERENCES customers(customer_id) ON DELETE CASCADE,
       contact_person VARCHAR(100) NOT NULL,
@@ -74,7 +74,7 @@ const createTables = () => {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE IF NOT EXISTS api_access (
+    CREATE TABLE api_access (
       access_id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
       api_name VARCHAR(100) NOT NULL
@@ -267,28 +267,8 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Get all customers (use authenticateToken before checkRole)
-app.get('/access', (req, res) => {
-  client.query('SELECT * FROM api_access')
-    .then(result => res.json(result.rows))
-    .catch(err => {
-      console.error('Error fetching customers:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
-
-// Get all customers (use authenticateToken before checkRole)
-app.get('/users', (req, res) => {
-  client.query('SELECT * FROM users')
-    .then(result => res.json(result.rows))
-    .catch(err => {
-      console.error('Error fetching customers:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
-
-// Create a new customer (example API access control)
-app.post('/customers', authenticateToken, checkAccess('create_customer'), (req, res) => {
+// Create a new customer  checkRole([0, 1]), 
+app.post('/customers',authenticateToken,  checkAccess('create_customer'),(req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
   const query = `
@@ -382,7 +362,7 @@ app.delete('/customers/:id',authenticateToken, checkAccess('delete_customer'), (
 });
 
 // Create a new contact
-app.post('/contacts',authenticateToken,  checkAccess('create_contact'), (req, res) => {
+app.post('/contacts',authenticateToken, checkAccess('create_contact'), (req, res) => {
   const { customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_end, status } = req.body;
   const date_of_start = req.body.date_of_start || moment().format('YYYY-MM-DD');
 
@@ -416,7 +396,7 @@ app.get('/all-contacts',authenticateToken, checkAccess('all_contact'), (req, res
 });
 
 // Get a contact by ID
-app.get('/contacts/:id',authenticateToken, checkAccess('id_contact'), (req, res) => {
+app.get('/contacts/:id',authenticateToken,checkAccess('all_contact'), (req, res) => {
   const id = req.params.id;
   client.query('SELECT * FROM contacts WHERE contact_id = $1', [id])
     .then(result => {
@@ -433,7 +413,7 @@ app.get('/contacts/:id',authenticateToken, checkAccess('id_contact'), (req, res)
 });
 
 // Update a contact by ID
-app.put('/contacts/:id',authenticateToken,  checkAccess('update_contact'), (req, res) => {
+app.put('/contacts/:id',authenticateToken, checkAccess('update_contact'), (req, res) => {
   const id = req.params.id;
   const { customer_id, contact_person, phone_num, email_id, address, city, state, country, pincode, department, designation, date_of_start, date_of_end, status } = req.body;
 
