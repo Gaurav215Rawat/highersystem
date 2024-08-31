@@ -267,6 +267,15 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// Get all customers (use authenticateToken before checkRole)
+app.get('/users', (req, res) => {
+  client.query('SELECT * FROM users')
+    .then(result => res.json(result.rows))
+    .catch(err => {
+      console.error('Error fetching customers:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
 
 // Create a new customer (example API access control)
 app.post('/customers', authenticateToken, checkAccess('create_customer'), (req, res) => {
