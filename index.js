@@ -27,7 +27,7 @@ const createTables = () => {
     DROP TABLE IF EXISTS users CASCADE;
     DROP TABLE IF EXISTS api_access CASCADE;
 
-    CREATE TABLE users (
+    CREATE TABLE IF NOT EXISTS users (
       user_id SERIAL PRIMARY KEY,
       first_name VARCHAR(20) NOT NULL,
       last_name VARCHAR(20) NOT NULL,
@@ -37,7 +37,7 @@ const createTables = () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE customers (
+    CREATE TABLE IF NOT EXISTS customers (
       customer_id SERIAL PRIMARY KEY,
       customer_name VARCHAR(100) NOT NULL,
       gst_number VARCHAR(15),
@@ -54,7 +54,7 @@ const createTables = () => {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE contacts (
+    CREATE TABLE IF NOT EXISTS contacts (
       contact_id SERIAL PRIMARY KEY,
       customer_id INTEGER REFERENCES customers(customer_id) ON DELETE CASCADE,
       contact_person VARCHAR(100) NOT NULL,
@@ -74,7 +74,7 @@ const createTables = () => {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE api_access (
+    CREATE TABLE IF NOT EXISTS api_access (
       access_id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
       api_name VARCHAR(100) NOT NULL
@@ -124,13 +124,17 @@ const authenticateToken = (req, res, next) => {
 const checkAccess = (apiName) => {
   return (req, res, next) => {
     const { user_id } = req.user;
+    console.log(`Checking access for User ID: ${user_id}, API Name: ${apiName}`);
 
     const query = `SELECT * FROM api_access WHERE user_id = $1 AND api_name = $2`;
     client.query(query, [user_id, apiName])
       .then(result => {
+        console.log('API Access Query Result:', result.rows);
         if (result.rows.length > 0) {
-          next(); // User has access, proceed to the route
+          console.log('Access granted.');
+          next();
         } else {
+          console.log('Access denied.');
           res.status(403).json({ error: 'Access denied. You do not have permission to access this API.' });
         }
       })
@@ -267,7 +271,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Create a new customer  checkRole([0, 1]), 
+// Create a new customer
 app.post('/customers',authenticateToken,  checkAccess('create_customer'),(req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
 
