@@ -108,7 +108,7 @@ client.connect()
 
 
 
-  
+
 // Middleware to verify JWT and attach user info to req.user
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -295,7 +295,7 @@ app.post('/login', async (req, res) => {
 
 
 // Get all user
-app.get('/user', authenticateToken, checkAccess('all_customer'), (req, res) => {
+app.get('/users', (req, res) => {
   client.query('SELECT * FROM users')
     .then(result => res.json(result.rows))
     .catch(err => {
@@ -304,8 +304,8 @@ app.get('/user', authenticateToken, checkAccess('all_customer'), (req, res) => {
     });
 });
 // Get all api_access
-app.get('/all-customers', authenticateToken, checkAccess('all_customer'), (req, res) => {
-  client.query('SELECT * FROM customers')
+app.get('/access', (req, res) => {
+  client.query('SELECT * FROM api_access')
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
