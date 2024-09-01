@@ -123,7 +123,7 @@ const authenticateToken = (req, res, next) => {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
-    req.user = user; // Attach the decoded token payload to req.user
+    req.user = {user:user, user_id: user.id, email: user.email }; // Attach user_id and email to req.user
     next();
   });
 };
