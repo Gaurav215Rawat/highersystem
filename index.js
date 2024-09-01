@@ -101,6 +101,14 @@ client.connect()
     console.error('Error initializing the application:', err.stack);
   });
 
+
+
+
+
+
+
+
+  
 // Middleware to verify JWT and attach user info to req.user
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -144,6 +152,15 @@ const checkAccess = (apiName) => {
       });
   };
 };
+
+
+
+
+
+
+
+
+
 
 // Route for user registration (signup)
 app.post('/signup', [
@@ -271,6 +288,38 @@ app.post('/login', async (req, res) => {
   }
 });
 
+
+
+
+
+
+
+// Get all user
+app.get('/user', authenticateToken, checkAccess('all_customer'), (req, res) => {
+  client.query('SELECT * FROM users')
+    .then(result => res.json(result.rows))
+    .catch(err => {
+      console.error('Error fetching customers:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
+// Get all api_access
+app.get('/all-customers', authenticateToken, checkAccess('all_customer'), (req, res) => {
+  client.query('SELECT * FROM customers')
+    .then(result => res.json(result.rows))
+    .catch(err => {
+      console.error('Error fetching customers:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
+
+
+
+
+
+
+
+
 // Create a new customer
 app.post('/customers',authenticateToken,  checkAccess('create_customer'),(req, res) => {
   const { customer_name, gst_number, landline_num, email_id, pan_no, tan_number, address, city, state, country, pincode } = req.body;
@@ -364,6 +413,14 @@ app.delete('/customers/:id',authenticateToken, checkAccess('delete_customer'), (
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
+
+
+
+
+
+
+
 
 // Create a new contact
 app.post('/contacts',authenticateToken, checkAccess('create_contact'), (req, res) => {
