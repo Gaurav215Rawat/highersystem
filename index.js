@@ -202,11 +202,21 @@ app.post('/signup', [
 });
 
 app.put('/update_access', authenticateToken, async (req, res) => {
-  const { user_id } = req.user;
+  const { email } = req.body; // Expecting email in the request body
   const { api_access } = req.body;
 
   try {
-    // Delete existing access
+    // Retrieve the user_id based on the email
+    const userQuery = 'SELECT user_id FROM users WHERE email = $1';
+    const userResult = await client.query(userQuery, [email]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found. Please check the email entered.' });
+    }
+
+    const user_id = userResult.rows[0].user_id;
+
+    // Delete existing access for the user
     await client.query('DELETE FROM api_access WHERE user_id = $1', [user_id]);
 
     // Insert new access
@@ -311,6 +321,17 @@ app.get('/users', (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
+// Get user email
+app.get('/email_users', (req, res) => {
+  client.query('SELECT email FROM users')
+    .then(result => res.json(result.rows))
+    .catch(err => {
+      console.error('Error fetching customers:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
+
 // Get all api_access
 app.get('/access', (req, res) => {
   client.query('SELECT * FROM api_access')
@@ -464,22 +485,6 @@ app.get('/all-contacts',authenticateToken, checkAccess('all_contact'), (req, res
     });
 });
 
-// Get a contact by ID
-app.get('/contacts/:id',authenticateToken,checkAccess('all_contact'), (req, res) => {
-  const id = req.params.id;
-  client.query('SELECT * FROM contacts WHERE contact_id = $1', [id])
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json(result.rows[0]);
-      } else {
-        res.status(404).json({ error: 'Contact not found' });
-      }
-    })
-    .catch(err => {
-      console.error('Error fetching contact:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
 
 // Update a contact by ID
 app.put('/contacts/:id',authenticateToken, checkAccess('update_contact'), (req, res) => {
