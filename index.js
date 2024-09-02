@@ -202,18 +202,18 @@ app.post('/signup', [
 });
 
 app.put('/update_access', authenticateToken, async (req, res) => {
-  const userId = req.params.id;
+  const { user_id } = req.user;
   const { api_access } = req.body;
 
   try {
     // Delete existing access
-    await client.query('DELETE FROM api_access WHERE user_id = $1', [userId]);
+    await client.query('DELETE FROM api_access WHERE user_id = $1', [user_id]);
 
     // Insert new access
     if (api_access && api_access.length > 0) {
       // Create a list of value placeholders for the query
       const valuePlaceholders = api_access.map((_, i) => `($1, $${i + 2})`).join(', ');
-      const values = [userId, ...api_access]; // Flatten the values array
+      const values = [user_id, ...api_access]; // Flatten the values array
 
       const accessQuery = `
         INSERT INTO api_access (user_id, api_name)
