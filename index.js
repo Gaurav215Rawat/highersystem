@@ -211,10 +211,18 @@ app.put('/update_access', authenticateToken, async (req, res) => {
 
     // Insert new access
     if (api_access && api_access.length > 0) {
+      // Create a list of value placeholders for the query
+      const valuePlaceholders = api_access.map((_, i) => `($1, $${i + 2})`).join(', ');
+      const values = [userId, ...api_access]; // Flatten the values array
+
       const accessQuery = `
         INSERT INTO api_access (user_id, api_name)
-        VALUES ${api_access.map((_, i) => `(${userId}, $${i + 1})`).join(', ')}`;
-      await client.query(accessQuery, api_access);
+        VALUES ${valuePlaceholders}`;
+      
+      console.log('Executing query:', accessQuery);
+      console.log('With values:', values);
+
+      await client.query(accessQuery, values);
     }
 
     res.status(200).json({
