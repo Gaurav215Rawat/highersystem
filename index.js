@@ -201,14 +201,13 @@ app.post('/signup', [
   }
 });
 
-// Route to update user API access
-app.put('/users/:id/access', authenticateToken, async (req, res) => {
+app.put('/update_access', authenticateToken, async (req, res) => {
   const userId = req.params.id;
   const { api_access } = req.body;
 
   try {
     // Delete existing access
-    await client.query(`DELETE FROM api_access WHERE user_id = $1`, [userId]);
+    await client.query('DELETE FROM api_access WHERE user_id = $1', [userId]);
 
     // Insert new access
     if (api_access && api_access.length > 0) {
@@ -226,6 +225,7 @@ app.put('/users/:id/access', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // Use the same secret key for signing and verifying the tokens
 const JWT_SECRET = "mysecret";
