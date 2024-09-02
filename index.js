@@ -77,7 +77,7 @@ const createTables = () => {
     CREATE TABLE IF NOT EXISTS api_access (
       access_id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-      api_name VARCHAR(100) NOT NULL
+      api_name VARCHAR(100)
     );
   `;
 
