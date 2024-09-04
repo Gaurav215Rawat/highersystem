@@ -201,73 +201,6 @@ app.post('/signup', [
   }
 });
 
-app.put('/update_access', authenticateToken, async (req, res) => {
-  const { email } = req.body; // Expecting email in the request body
-  const { api_access } = req.body;
-
-  try {
-    // Retrieve the user_id based on the email
-    const userQuery = 'SELECT user_id FROM users WHERE email = $1';
-    const userResult = await client.query(userQuery, [email]);
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found. Please check the email entered.' });
-    }
-
-    const user_id = userResult.rows[0].user_id;
-
-    // Delete existing access for the user
-    await client.query('DELETE FROM api_access WHERE user_id = $1', [user_id]);
-
-    // Insert new access
-    if (api_access && api_access.length > 0) {
-      // Create a list of value placeholders for the query
-      const valuePlaceholders = api_access.map((_, i) => `($1, $${i + 2})`).join(', ');
-      const values = [user_id, ...api_access]; // Flatten the values array
-
-      const accessQuery = `
-        INSERT INTO api_access (user_id, api_name)
-        VALUES ${valuePlaceholders}`;
-      
-      console.log('Executing query:', accessQuery);
-      console.log('With values:', values);
-
-      await client.query(accessQuery, values);
-    }
-
-    res.status(200).json({
-      message: 'API access updated successfully.'
-    });
-  } catch (err) {
-    console.error('Error updating API access:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-
-// Use the same secret key for signing and verifying the tokens
-const JWT_SECRET = "mysecret";
-
-// Route to verify the token
-app.post('/verify-token', (req, res) => {
-  const { token } = req.body;
-
-  if (!token) {
-    return res.status(400).json({ error: 'Token is required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-
-    res.json({
-      message: 'Token is valid',
-      userId: decoded.id,
-      email: decoded.email
-    });
-  });
-});
 
 // Route for user login
 app.post('/login', async (req, res) => {
@@ -341,6 +274,88 @@ app.get('/access', (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
+
+
+
+
+
+// Use the same secret key for signing and verifying the tokens
+const JWT_SECRET = "mysecret";
+
+// Route to verify the token
+app.post('/verify-token', (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ error: 'Token is required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    res.json({
+      message: 'Token is valid',
+      userId: decoded.id,
+      email: decoded.email
+    });
+  });
+});
+
+
+
+
+
+
+
+
+// Update API access route with permission check
+app.put('/update_access', authenticateToken,  checkAccess('create_customer'), async (req, res) => {
+  const { email } = req.body; // Expecting email in the request body
+  const { api_access } = req.body;
+
+  try {
+    // Retrieve the user_id based on the email
+    const userQuery = 'SELECT user_id FROM users WHERE email = $1';
+    const userResult = await client.query(userQuery, [email]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found. Please check the email entered.' });
+    }
+
+    const user_id = userResult.rows[0].user_id;
+
+    // Delete existing access for the user
+    await client.query('DELETE FROM api_access WHERE user_id = $1', [user_id]);
+
+    // Insert new access
+    if (api_access && api_access.length > 0) {
+      // Create a list of value placeholders for the query
+      const valuePlaceholders = api_access.map((_, i) => `($1, $${i + 2})`).join(', ');
+      const values = [user_id, ...api_access]; // Flatten the values array
+
+      const accessQuery = `
+        INSERT INTO api_access (user_id, api_name)
+        VALUES ${valuePlaceholders}`;
+      
+      console.log('Executing query:', accessQuery);
+      console.log('With values:', values);
+
+      await client.query(accessQuery, values);
+    }
+
+    res.status(200).json({
+      message: 'API access updated successfully.'
+    });
+  } catch (err) {
+    console.error('Error updating API access:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 
 
 
