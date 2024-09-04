@@ -312,7 +312,7 @@ app.post('/verify-token', (req, res) => {
 
 
 // Update API access route with permission check
-app.put('/update_access', authenticateToken,  checkAccess('create_customer'), async (req, res) => {
+app.put('/update_access', authenticateToken,  checkAccess('update_access'), async (req, res) => {
   const { email } = req.body; // Expecting email in the request body
   const { api_access } = req.body;
 
