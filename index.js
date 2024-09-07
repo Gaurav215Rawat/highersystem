@@ -310,9 +310,8 @@ app.post('/verify-token', (req, res) => {
 
 
 
-
 // Update API access route with permission check
-app.put('/update_access', authenticateToken,  checkAccess('update_access'), async (req, res) => {
+app.put('/update_access', authenticateToken, checkAccess('update_access'), async (req, res) => {
   const { email } = req.body; // Expecting email in the request body
   const { api_access } = req.body;
 
@@ -326,6 +325,11 @@ app.put('/update_access', authenticateToken,  checkAccess('update_access'), asyn
     }
 
     const user_id = userResult.rows[0].user_id;
+
+    // Check if the email is 'superadmin@gmail.com' and block modification
+    if (email === 'superadmin@gmail.com') {
+      return res.status(403).json({ error: 'Super Admin access cannot be modified.' });
+    }
 
     // Delete existing access for the user
     await client.query('DELETE FROM api_access WHERE user_id = $1', [user_id]);
@@ -354,6 +358,7 @@ app.put('/update_access', authenticateToken,  checkAccess('update_access'), asyn
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 
