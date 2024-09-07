@@ -257,7 +257,7 @@ app.get('/users', (req, res) => {
 
 // Get user email
 app.get('/email_users', (req, res) => {
-  client.query('SELECT email FROM users')
+  client.query('SELECT email,user_id FROM users')
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
