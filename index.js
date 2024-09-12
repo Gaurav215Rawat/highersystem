@@ -349,25 +349,24 @@ app.post('/verify-token', (req, res) => {
 
 
 
-
 // Update API access route with permission check
 app.put('/update_access', authenticateToken, checkAccess('update_access'), async (req, res) => {
-  const { email } = req.body; // Expecting email in the request body
+  const { user_id } = req.body; // Expecting user_id in the request body now
   const { api_access } = req.body;
 
   try {
-    // Retrieve the user_id based on the email
-    const userQuery = 'SELECT user_id FROM users WHERE email = $1';
-    const userResult = await client.query(userQuery, [email]);
+    // Check if the user exists based on the provided user_id
+    const userQuery = 'SELECT user_id, email FROM users WHERE user_id = $1';
+    const userResult = await client.query(userQuery, [user_id]);
 
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found. Please check the email entered.' });
+      return res.status(404).json({ error: 'User not found. Please check the user_id provided.' });
     }
 
-    const user_id = userResult.rows[0].user_id;
+    const user_email = userResult.rows[0].email;
 
-    // Check if the email is 'superadmin@gmail.com' and block modification
-    if (email === 'superadmin@gmail.com') {
+    // Check if the user is 'superadmin@gmail.com' and block modification
+    if (user_email === 'superadmin@gmail.com') {
       return res.status(403).json({ error: 'Super Admin access cannot be modified.' });
     }
 
@@ -398,6 +397,7 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 
