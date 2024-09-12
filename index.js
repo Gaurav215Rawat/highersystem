@@ -371,7 +371,8 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
     }
 
     // Delete existing access for the user
-    await client.query('DELETE FROM api_access WHERE user_id = $1', [user_id]);
+    const deleteQuery = 'DELETE FROM api_access WHERE user_id = $1';
+    await client.query(deleteQuery, [user_id]);
 
     // Insert new access
     if (api_access && api_access.length > 0) {
@@ -397,8 +398,6 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-
 
 
 
