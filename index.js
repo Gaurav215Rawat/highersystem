@@ -42,7 +42,7 @@ const createTables = () => {
       email VARCHAR(30) UNIQUE NOT NULL,
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
-      dept_id INTEGER REFERENCES departments(dept_id) ON DELETE SET NULL,
+      dept_id INTEGER REFERENCES departments(dept_id)  ON DELETE CASCADE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
