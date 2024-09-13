@@ -175,20 +175,21 @@ const checkAccess = (apiName) => {
 app.post('/signup', [
   body('email').isEmail().withMessage('Invalid email address'),
   body('password').isLength({ min: 5 }).withMessage('Password must be at least 5 characters long'),
+  body('dept_id').isInt().withMessage('Invalid department ID')
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { first_name, last_name, email, phone_no, password, api_access } = req.body;
+  const { first_name, last_name, email, phone_no, password, dept_id, api_access } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const query = `
-      INSERT INTO users (first_name, last_name, email, phone_no, password)
-      VALUES ($1, $2, $3, $4, $5) RETURNING *`;
-    const values = [first_name, last_name, email, phone_no, hashedPassword];
+      INSERT INTO users (first_name, last_name, email, phone_no, password, dept_id)
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
+    const values = [first_name, last_name, email, phone_no, hashedPassword, dept_id];
 
     const result = await client.query(query, values);
     const newUser = result.rows[0];
@@ -209,6 +210,7 @@ app.post('/signup', [
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 // Route for user login
