@@ -22,20 +22,19 @@ app.use(bodyParser.json());
 // Function to create tables if they don't exist
 const createTables = () => {
   const createTablesQuery = `
-   DROP TABLE IF EXISTS contacts CASCADE;
+    DROP TABLE IF EXISTS contacts CASCADE;
     DROP TABLE IF EXISTS customers CASCADE;
     DROP TABLE IF EXISTS users CASCADE;
     DROP TABLE IF EXISTS api_access CASCADE;
     DROP TABLE IF EXISTS departments CASCADE;
 
-    -- Create departments table
-    CREATE TABLE IF NOT EXISTS departments (
-      department_id SERIAL PRIMARY KEY,
-      department_name VARCHAR(100) UNIQUE NOT NULL,
+
+     CREATE TABLE IF NOT EXISTS departments (
+      dept_id SERIAL PRIMARY KEY,
+      dept_name VARCHAR(20) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- Create users table with department_id as foreign key
     CREATE TABLE IF NOT EXISTS users (
       user_id SERIAL PRIMARY KEY,
       first_name VARCHAR(20) NOT NULL,
@@ -43,7 +42,7 @@ const createTables = () => {
       email VARCHAR(30) UNIQUE NOT NULL,
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
-      department_id INTEGER REFERENCES departments(department_id) ON DELETE SET NULL,
+      dept_id INTEGER REFERENCES departments(dept_id) ON DELETE SET NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -176,21 +175,20 @@ const checkAccess = (apiName) => {
 app.post('/signup', [
   body('email').isEmail().withMessage('Invalid email address'),
   body('password').isLength({ min: 5 }).withMessage('Password must be at least 5 characters long'),
-  body('department_id').optional().isInt().withMessage('Invalid department ID'), // Validate department_id
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { first_name, last_name, email, phone_no, password, api_access, department_id } = req.body;
+  const { first_name, last_name, email, phone_no, password, api_access } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const query = `
-      INSERT INTO users (first_name, last_name, email, phone_no, password, department_id)
-      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
-    const values = [first_name, last_name, email, phone_no, hashedPassword, department_id || null];
+      INSERT INTO users (first_name, last_name, email, phone_no, password)
+      VALUES ($1, $2, $3, $4, $5) RETURNING *`;
+    const values = [first_name, last_name, email, phone_no, hashedPassword];
 
     const result = await client.query(query, values);
     const newUser = result.rows[0];
@@ -211,7 +209,6 @@ app.post('/signup', [
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 
 
 // Route for user login
@@ -260,38 +257,17 @@ app.post('/login', async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-// GET /departments - Retrieve all departments
-app.get('/departments', async (req, res) => {
-  try {
-    const result = await client.query('SELECT * FROM department');
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('Error retrieving departments:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // POST /departments - Add a new department
 app.post('/departments', async (req, res) => {
-  const { department_name } = req.body;
+  const { dept_name } = req.body;
 
-  if (!department_name) {
+  if (!dept_name) {
     return res.status(400).json({ error: 'Department name is required' });
   }
 
   try {
-    const query = 'INSERT INTO department (department_name) VALUES ($1) RETURNING *';
-    const values = [department_name];
+    const query = 'INSERT INTO departments (dept_name) VALUES ($1) RETURNING *';
+    const values = [dept_name];
     const result = await client.query(query, values);
     const newDepartment = result.rows[0];
     res.status(201).json({
@@ -304,13 +280,16 @@ app.post('/departments', async (req, res) => {
   }
 });
 
-
-
-
-
-
-
-
+// GET /departments - Retrieve all departments
+app.get('/departments', async (req, res) => {
+  try {
+    const result = await client.query('SELECT * FROM departments');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error retrieving departments:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 
