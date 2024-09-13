@@ -257,6 +257,67 @@ app.post('/login', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+// GET /departments - Retrieve all departments
+app.get('/departments', async (req, res) => {
+  try {
+    const result = await client.query('SELECT * FROM department');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error retrieving departments:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /departments - Add a new department
+app.post('/departments', async (req, res) => {
+  const { department_name } = req.body;
+
+  if (!department_name) {
+    return res.status(400).json({ error: 'Department name is required' });
+  }
+
+  try {
+    const query = 'INSERT INTO department (department_name) VALUES ($1) RETURNING *';
+    const values = [department_name];
+    const result = await client.query(query, values);
+    const newDepartment = result.rows[0];
+    res.status(201).json({
+      message: 'Department added successfully.',
+      department: newDepartment,
+    });
+  } catch (err) {
+    console.error('Error adding department:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Get all user
 app.get('/users', (req, res) => {
   client.query('SELECT * FROM users')
