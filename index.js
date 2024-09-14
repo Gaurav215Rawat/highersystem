@@ -365,7 +365,7 @@ app.get('/email_users', (req, res) => {
 });
 
 
-// Route for updating the password (only superadmin can update, but not their own password)
+// Route for updating the password (only super_admin can update, but not their own password)
 app.put('/update-password', authenticateToken, async (req, res) => {
   const { email, newPassword } = req.body;
   const { email: requesterEmail } = req.user; // Email of the user making the request
@@ -406,6 +406,22 @@ app.put('/update-password', authenticateToken, async (req, res) => {
   }
 });
 
+// Get a user by ID
+app.get('/id_user', (req, res) => {
+  const id = req.params.id;
+  client.query('SELECT * FROM users WHERE user_id = $1', [id])
+    .then(result => {
+      if (result.rows.length > 0) {
+        res.json(result.rows[0]);
+      } else {
+        res.status(404).json({ error: 'user not found' });
+      }
+    })
+    .catch(err => {
+      console.error('Error fetching user:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
 
 
 // Delete a users by ID
@@ -496,6 +512,22 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
   }
 });
 
+// Get a access by ID
+app.get('/id_access', (req, res) => {
+  const id = req.params.id;
+  client.query('SELECT * FROM api_access WHERE user_id = $1', [id])
+    .then(result => {
+      if (result.rows.length > 0) {
+        res.json(result.rows[0]);
+      } else {
+        res.status(404).json({ error: 'access not found' });
+      }
+    })
+    .catch(err => {
+      console.error('Error fetching access:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
 
 
 
