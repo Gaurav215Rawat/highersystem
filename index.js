@@ -32,6 +32,7 @@ const createTables = () => {
      CREATE TABLE IF NOT EXISTS departments (
       dept_id SERIAL PRIMARY KEY,
       dept_name VARCHAR(20) NOT NULL,
+      dept_data VARCHAR(20),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -166,7 +167,29 @@ const checkAccess = (apiName) => {
 
 
 
+// Use the same secret key for signing and verifying the tokens
+const JWT_SECRET = "mysecret";
 
+// Route to verify the token
+app.post('/verify-token', (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ error: 'Token is required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+
+    res.json({
+      message: 'Token is valid',
+      userId: decoded.id,
+      email: decoded.email
+    });
+  });
+});
 
 
 
@@ -293,6 +316,28 @@ app.get('/departments', async (req, res) => {
   }
 });
 
+// Delete a customer by ID
+app.delete('/departments',(req, res) => {
+  const id = req.params.id;
+  const query = 'DELETE FROM departments WHERE dept_id = $1 RETURNING *';
+  client.query(query, [id])
+    .then(result => {
+      if (result.rows.length > 0) {
+        res.json({ message: 'deleted successfully', customer: result.rows[0] });
+      } else {
+        res.status(404).json({ error: 'Department not found' });
+      }
+    })
+    .catch(err => {
+      console.error('Error deleting :', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
+
+
+
+
+
 
 
 
@@ -319,15 +364,6 @@ app.get('/email_users', (req, res) => {
     });
 });
 
-// Get all api_access
-app.get('/access', (req, res) => {
-  client.query('SELECT * FROM api_access')
-    .then(result => res.json(result.rows))
-    .catch(err => {
-      console.error('Error fetching customers:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
 
 // Route for updating the password (only superadmin can update, but not their own password)
 app.put('/update-password', authenticateToken, async (req, res) => {
@@ -372,35 +408,42 @@ app.put('/update-password', authenticateToken, async (req, res) => {
 
 
 
-
-
-// Use the same secret key for signing and verifying the tokens
-const JWT_SECRET = "mysecret";
-
-// Route to verify the token
-app.post('/verify-token', (req, res) => {
-  const { token } = req.body;
-
-  if (!token) {
-    return res.status(400).json({ error: 'Token is required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-
-    res.json({
-      message: 'Token is valid',
-      userId: decoded.id,
-      email: decoded.email
+// Delete a users by ID
+app.delete('/users',(req, res) => {
+  const id = req.params.id;
+  const query = 'DELETE FROM users WHERE user_id = $1 RETURNING *';
+  client.query(query, [id])
+    .then(result => {
+      if (result.rows.length > 0) {
+        res.json({ message: 'deleted successfully', customer: result.rows[0] });
+      } else {
+        res.status(404).json({ error: 'user not found' });
+      }
+    })
+    .catch(err => {
+      console.error('Error deleting :', err);
+      res.status(500).json({ error: 'Internal server error' });
     });
-  });
 });
 
 
 
 
+
+
+
+
+
+
+// Get all api_access
+app.get('/access', (req, res) => {
+  client.query('SELECT * FROM api_access')
+    .then(result => res.json(result.rows))
+    .catch(err => {
+      console.error('Error fetching customers:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
 
 
 // Update API access route with permission check
@@ -452,6 +495,9 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
+
 
 
 
