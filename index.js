@@ -512,18 +512,19 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
 
 
 app.post('/verify-access', (req, res) => {
-  const { user_id, pages } = req.body;
+  const { user_id, pages } = req.body;  // Expecting user_id and an array of api_name (pages)
 
-  const query = 'SELECT page_name FROM api_access WHERE user_id = $1 AND api_name = ANY($2::text[])';
+  // SQL query to select api_name where user_id matches and the api_name exists in the pages array
+  const query = 'SELECT api_name FROM api_access WHERE user_id = $1 AND api_name = ANY($2::text[])';
   
   client.query(query, [user_id, pages])
     .then(result => {
-      const accessiblePages = result.rows.map(row => row.api_name); // Get the accessible pages
+      const accessiblePages = result.rows.map(row => row.api_name); // Get the accessible api_names
 
       // Build the response with true or false for each page
       const accessResult = {};
       pages.forEach(page => {
-        accessResult[page] = accessiblePages.includes(page);
+        accessResult[page] = accessiblePages.includes(page); // Check if the page is in the accessiblePages
       });
 
       res.json(accessResult); // Send back the result as an object
@@ -533,6 +534,7 @@ app.post('/verify-access', (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
 
 
 
