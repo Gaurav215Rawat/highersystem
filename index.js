@@ -514,7 +514,7 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
 app.post('/verify-access', (req, res) => {
   const { user_id, pages } = req.body;
 
-  const query = 'SELECT page_name FROM api_access WHERE user_id = $1 AND page_name = ANY($2::text[])';
+  const query = 'SELECT page_name FROM api_access WHERE user_id = $1 AND api_name = ANY($2::text[])';
   
   client.query(query, [user_id, pages])
     .then(result => {
