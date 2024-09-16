@@ -518,7 +518,7 @@ app.post('/verify-access', (req, res) => {
   
   client.query(query, [user_id, pages])
     .then(result => {
-      const accessiblePages = result.rows.map(row => row.page_name); // Get the accessible pages
+      const accessiblePages = result.rows.map(row => row.api_name); // Get the accessible pages
 
       // Build the response with true or false for each page
       const accessResult = {};
