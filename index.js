@@ -342,8 +342,6 @@ app.delete('/departments',(req, res) => {
 
 
 
-
-
 // Get all user
 app.get('/users', (req, res) => {
   client.query('SELECT * FROM users')
@@ -529,6 +527,27 @@ app.get('/id_access', (req, res) => {
     });
 });
 
+
+app.post('/verify-access', (req, res) => {
+  const { user_id, page_name } = req.body;
+
+  const query = 'SELECT * FROM api_access WHERE user_id = $1 AND api_name = $2';
+  
+  client.query(query, [user_id, page_name])
+    .then(result => {
+      if (result.rows.length > 0) {
+        // User has access
+        res.json({ message: 'Access granted', access: true });
+      } else {
+        // User does not have access
+        res.status(403).json({ message: 'Access denied', access: false });
+      }
+    })
+    .catch(err => {
+      console.error('Error verifying access:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
 
 
 
