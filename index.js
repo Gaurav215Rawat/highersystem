@@ -510,44 +510,30 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
   }
 });
 
-// Get a access by ID
-app.get('/id_access', (req, res) => {
-  const id = req.params.id;
-  client.query('SELECT * FROM api_access WHERE user_id = $1', [id])
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json(result.rows[0]);
-      } else {
-        res.status(404).json({ error: 'access not found' });
-      }
-    })
-    .catch(err => {
-      console.error('Error fetching access:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
-
 
 app.post('/verify-access', (req, res) => {
-  const { user_id, page_name } = req.body;
+  const { user_id, pages } = req.body;
 
-  const query = 'SELECT * FROM api_access WHERE user_id = $1 AND api_name = $2';
+  const query = 'SELECT page_name FROM api_access WHERE user_id = $1 AND page_name = ANY($2::text[])';
   
-  client.query(query, [user_id, page_name])
+  client.query(query, [user_id, pages])
     .then(result => {
-      if (result.rows.length > 0) {
-        // User has access
-        res.json({ message: 'Access granted', access: true });
-      } else {
-        // User does not have access
-        res.status(403).json({ message: 'Access denied', access: false });
-      }
+      const accessiblePages = result.rows.map(row => row.page_name); // Get the accessible pages
+
+      // Build the response with true or false for each page
+      const accessResult = {};
+      pages.forEach(page => {
+        accessResult[page] = accessiblePages.includes(page);
+      });
+
+      res.json(accessResult); // Send back the result as an object
     })
     .catch(err => {
       console.error('Error verifying access:', err);
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
 
 
 
@@ -588,24 +574,6 @@ app.get('/all-customers', authenticateToken, checkAccess('all_customer'), (req, 
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
-});
-
-
-// Get a customer by ID
-app.get('/customers/:id',authenticateToken, checkAccess('id_customer'), (req, res) => {
-  const id = req.params.id;
-  client.query('SELECT * FROM customers WHERE customer_id = $1', [id])
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json(result.rows[0]);
-      } else {
-        res.status(404).json({ error: 'Customer not found' });
-      }
-    })
-    .catch(err => {
-      console.error('Error fetching customer:', err);
       res.status(500).json({ error: 'Internal server error' });
     });
 });
