@@ -279,20 +279,18 @@ app.post('/login', async (req, res) => {
 
 
 
-
-
-
-// POST /departments - Add a new department
+// POST /departments - Add a new department with dept_data
 app.post('/departments', async (req, res) => {
-  const { dept_name } = req.body;
+  const { dept_name, dept_data } = req.body;
 
+  // Ensure department name is provided
   if (!dept_name) {
     return res.status(400).json({ error: 'Department name is required' });
   }
 
   try {
-    const query = 'INSERT INTO departments (dept_name) VALUES ($1) RETURNING *';
-    const values = [dept_name];
+    const query = 'INSERT INTO departments (dept_name, dept_data) VALUES ($1, $2) RETURNING *';
+    const values = [dept_name, dept_data || null];  // If dept_data is not provided, default to null
     const result = await client.query(query, values);
     const newDepartment = result.rows[0];
     res.status(201).json({
@@ -304,6 +302,18 @@ app.post('/departments', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// GET /departments - Retrieve all departments including dept_data
+app.get('/departments', async (req, res) => {
+  try {
+    const result = await client.query('SELECT * FROM departments');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error retrieving departments:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // GET /departments - Retrieve all departments
 app.get('/departments', async (req, res) => {
