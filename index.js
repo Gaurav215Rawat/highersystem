@@ -539,7 +539,7 @@ app.post('/verify-access', (req, res) => {
 // Get a api-access by ID
 app.get('/id_access', (req, res) => {
   const { id } = req.body;
-  client.query('SELECT * FROM access WHERE user_id = $1', [id])
+  client.query('SELECT * FROM api_access WHERE user_id = $1', [id])
     .then(result => {
       if (result.rows.length > 0) {
         res.json(result.rows[0]);
