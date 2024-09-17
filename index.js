@@ -406,7 +406,7 @@ app.put('/update-password', authenticateToken, async (req, res) => {
 
 // Get a user by ID
 app.get('/id_user', (req, res) => {
-  const id = req.params.id;
+  const { id } = req.body;
   client.query('SELECT * FROM users WHERE user_id = $1', [id])
     .then(result => {
       if (result.rows.length > 0) {
@@ -508,7 +508,7 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
     console.error('Error updating API access:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+}); 
 
 
 app.post('/verify-access', (req, res) => {
@@ -534,6 +534,25 @@ app.post('/verify-access', (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
+
+// Get a api-access by ID
+app.get('/id_user', (req, res) => {
+  const { id } = req.body;
+  client.query('SELECT * FROM access WHERE user_id = $1', [id])
+    .then(result => {
+      if (result.rows.length > 0) {
+        res.json(result.rows[0]);
+      } else {
+        res.status(404).json({ error: 'user not found' });
+      }
+    })
+    .catch(err => {
+      console.error('Error fetching user:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
+
 
 
 
