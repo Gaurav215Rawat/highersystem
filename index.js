@@ -546,19 +546,24 @@ app.post('/verify-access', (req, res) => {
 });
 
 
-// Get a api-access by ID
+// Get API access by user ID
 app.get('/id_access', (req, res) => {
   const { id } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+
   client.query('SELECT * FROM api_access WHERE user_id = $1', [id])
     .then(result => {
       if (result.rows.length > 0) {
-        res.json(result.rows[0]);
+        res.json(result.rows);  // Return all rows instead of just the first one
       } else {
-        res.status(404).json({ error: 'user not found' });
+        res.status(404).json({ error: 'User not found' });
       }
     })
     .catch(err => {
-      console.error('Error fetching user:', err);
+      console.error('Error fetching API access:', err);
       res.status(500).json({ error: 'Internal server error' });
     });
 });
