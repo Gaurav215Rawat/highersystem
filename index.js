@@ -326,9 +326,9 @@ app.get('/departments', async (req, res) => {
   }
 });
 
-// Delete a customer by ID
+// Delete 
 app.delete('/departments',(req, res) => {
-  const id = req.params.id;
+  const {id} = req.body;
   const query = 'DELETE FROM departments WHERE dept_id = $1 RETURNING *';
   client.query(query, [id])
     .then(result => {
