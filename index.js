@@ -32,7 +32,7 @@ const createTables = () => {
      CREATE TABLE IF NOT EXISTS departments (
       dept_id SERIAL PRIMARY KEY,
       dept_name VARCHAR(20) NOT NULL,
-      dept_data VARCHAR(20),
+      dept_data Text,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
