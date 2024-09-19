@@ -434,7 +434,7 @@ app.get('/id_user', (req, res) => {
 
 // Delete a users by ID
 app.delete('/users',(req, res) => {
-  const id = req.params.id;
+  const id = req.body;
   const query = 'DELETE FROM users WHERE user_id = $1 RETURNING *';
   client.query(query, [id])
     .then(result => {
