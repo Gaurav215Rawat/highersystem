@@ -352,7 +352,7 @@ app.delete('/departments',(req, res) => {
 
 // Get all user
 app.get('/users', (req, res) => {
-  client.query('SELECT * FROM users where email')
+  client.query('SELECT * FROM users')
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
