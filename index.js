@@ -350,10 +350,19 @@ app.delete('/departments',(req, res) => {
 
 
 
+// Get all user
+app.get('/users', (req, res) => {
+  client.query('SELECT * FROM users where email')
+    .then(result => res.json(result.rows))
+    .catch(err => {
+      console.error('Error fetching customers:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
 
 
 // Get all user
-app.get('/users', (req, res) => {
+app.get('/getusers', (req, res) => {
   client.query('SELECT * FROM users where email <> \'superadmin@gmail.com\'')
     .then(result => res.json(result.rows))
     .catch(err => {
