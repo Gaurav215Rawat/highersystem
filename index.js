@@ -432,23 +432,24 @@ app.get('/id_user', (req, res) => {
 });
 
 
-// Delete a users by ID
-app.delete('/users',(req, res) => {
-  const id = req.body;
+app.delete('/users', (req, res) => {
+  const { user_id } = req.body; // Extract user_id from the request body
   const query = 'DELETE FROM users WHERE user_id = $1 RETURNING *';
-  client.query(query, [id])
+
+  client.query(query, [user_id])
     .then(result => {
       if (result.rows.length > 0) {
-        res.json({ message: 'deleted successfully', customer: result.rows[0] });
+        res.json({ message: 'Deleted successfully', user: result.rows[0] });
       } else {
-        res.status(404).json({ error: 'user not found' });
+        res.status(404).json({ error: 'User not found' });
       }
     })
     .catch(err => {
-      console.error('Error deleting :', err);
+      console.error('Error deleting user:', err);
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
 
 
 
