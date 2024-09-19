@@ -31,7 +31,7 @@ const createTables = () => {
 
      CREATE TABLE IF NOT EXISTS departments (
       dept_id SERIAL PRIMARY KEY,
-      dept_name VARCHAR(20) NOT NULL,
+      dept_name VARCHAR(20) UNIQUE NOT NUL,
       dept_data Text,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -354,7 +354,7 @@ app.delete('/departments',(req, res) => {
 
 // Get all user
 app.get('/users', (req, res) => {
-  client.query('SELECT * FROM users')
+  client.query('SELECT * FROM users where email <> \'superadmin@gmail.com\'')
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
