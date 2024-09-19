@@ -433,10 +433,10 @@ app.get('/id_user', (req, res) => {
 
 
 app.delete('/users', (req, res) => {
-  const { user_id } = req.body; // Extract user_id from the request body
+  const { id } = req.body; // Extract user_id from the request body
   const query = 'DELETE FROM users WHERE user_id = $1 RETURNING *';
 
-  client.query(query, [user_id])
+  client.query(query, [id])
     .then(result => {
       if (result.rows.length > 0) {
         res.json({ message: 'Deleted successfully', user: result.rows[0] });
