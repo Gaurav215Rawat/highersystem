@@ -5,7 +5,7 @@ const { Pool } = require('pg');
 // Create a new Pool instance using environment variables
 const pool = new Pool({
   user: process.env.DB_USER || 'higherdb',
-  host: process.env.DB_HOST || 'ec2-65-0-21-69.ap-south-1.compute.amazonaws.com',
+  host: process.env.DB_HOST || 'ec2-43-204-140-118.ap-south-1.compute.amazonaws.com',
   database: process.env.DB_NAME || 'higherdb1',
   password: process.env.DB_PASSWORD || 'higherIndia1234',
   port: process.env.DB_PORT || 5432
