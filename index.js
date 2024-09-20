@@ -197,8 +197,7 @@ app.post('/verify-token', (req, res) => {
 // Route for user registration (signup)
 app.post('/signup', [
   body('email').isEmail().withMessage('Invalid email address'),
-  body('password').isLength({ min: 5 }).withMessage('Password must be at least 5 characters long'),
-  body('dept_id').isInt().withMessage('Invalid department ID')
+  body('password').isLength({ min: 5 }).withMessage('Password must be at least 5 characters long')
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
