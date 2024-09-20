@@ -33,7 +33,7 @@
 // // config.js
 module.exports = {
   database: {
-    connectionString: 'postgresql://higherindia_backend_user:agkwDfFmXqlSZDTFI14rrGCsNIvOedtE@dpg-cr41vq88fa8c73det0v0-a.singapore-postgres.render.com/higherindia_backend',
+    connectionString: 'postgresql://higher_javabackend_user:hBmofnLjTvPR4ajl4LV2GVpmAew0CfAa@dpg-crmk3q88fa8c73ak0nh0-a/higher_javabackend',
     ssl: {
       rejectUnauthorized: false
     }
