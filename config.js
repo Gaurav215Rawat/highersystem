@@ -32,8 +32,9 @@
 // // config.js
 module.exports = {
   database: {
-    connectionString: 'postgresql://higherindia_backend_user:agkwDfFmXqlSZDTFI14rrGCsNIvOedtE@dpg-cr41vq88fa8c73det0v0-a.singapore-postgres.render.com/higherindia_backend',
+    connectionString: 'postgresql://higherindia_backend_rlnw_user:a1L9MWheQ3eobbyOS7OL2G7QvwZDdqTO@dpg-croff0q3esus73c0mmm0-a/higherindia_backend_rlnw',
     ssl: {
       rejectUnauthorized: false
 }}
 };
+
