@@ -1,9 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { Client } = require('pg');
-const config = require('../config');
-
-const client = new Client(config.database);
 
 // Middleware to parse JSON bodies
 router.use(express.json());
