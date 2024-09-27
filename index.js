@@ -121,6 +121,8 @@ client.connect()
 
 
 
+// Use the same secret key for signing and verifying the tokens
+const JWT_SECRET = "mysecret";
 
 
 // Middleware to verify JWT and attach user info to req.user
@@ -141,9 +143,6 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
-
-module.exports = { authenticateToken };
-
 
 
 // Middleware to check user access to a specific API
@@ -170,13 +169,11 @@ const checkAccess = (apiName) => {
       });
   };
 };
-module.exports = { checkAccess }; 
+module.exports = { authenticateToken, checkAccess };
 
 
 
 
-// Use the same secret key for signing and verifying the tokens
-const JWT_SECRET = "mysecret";
 
 // Route to verify the token
 app.post('/verify-token', (req, res) => {
