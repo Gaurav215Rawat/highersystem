@@ -280,10 +280,10 @@ app.post('/login', async (req, res) => {
 
 // Connect your route files here
 const deptRoutes = require('./routes/dept');
-const userRoutes = require('./routes/user');
-const apiAccessRoutes = require('./routes/api_access');
+const userRoutes = require('./routes/users');
+const apiAccessRoutes = require('./routes/access');
 const customerRoutes = require('./routes/customer');
-const contactRoutes = require('./routes/contact');
+const contactRoutes = require('./routes/contacts');
 
 // Use your route files
 app.use('/departments', deptRoutes);
