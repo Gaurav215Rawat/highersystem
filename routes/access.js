@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const { Client } = require('pg');
 const config = require('../config');
+const { authenticateToken } = require('../index');
+const { checkAccess } = require('../index');
 
 const client = new Client(config.database);
 

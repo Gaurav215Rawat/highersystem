@@ -3,7 +3,7 @@ const router = express.Router();
 const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
 const config = require('../config');
-
+const { authenticateToken } = require('../index');
 const client = new Client(config.database);
 
 // Middleware to parse JSON bodies

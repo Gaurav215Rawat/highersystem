@@ -3,6 +3,8 @@ const router = express.Router();
 const { Client } = require('pg');
 const moment = require('moment');
 const config = require('../config');
+const { authenticateToken } = require('../index');
+const { checkAccess } = require('../index');
 
 const client = new Client(config.database);
 

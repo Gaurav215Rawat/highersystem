@@ -142,6 +142,10 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+module.exports = { authenticateToken };
+
+
+
 // Middleware to check user access to a specific API
 const checkAccess = (apiName) => {
   return (req, res, next) => {
@@ -166,7 +170,7 @@ const checkAccess = (apiName) => {
       });
   };
 };
-
+module.exports = { checkAccess }; 
 
 
 
