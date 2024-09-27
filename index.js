@@ -494,7 +494,7 @@ app.get('/users/filter', async (req, res) => {
       }
 
       // Execute the query
-      const result = await pool.query(query, queryParams);
+      const result = await client.query(query, queryParams);
 
       // Send response with the filtered results
       res.status(200).json(result.rows);
