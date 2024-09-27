@@ -426,21 +426,86 @@ app.put('/update-password', authenticateToken, async (req, res) => {
   }
 });
 
-// Get a user by ID
-app.get('/id_user', (req, res) => {
-  const { id } = req.body;
-  client.query('SELECT * FROM users WHERE user_id = $1', [id])
-    .then(result => {
-      if (result.rows.length > 0) {
-        res.json(result.rows[0]);
-      } else {
-        res.status(404).json({ error: 'user not found' });
+
+app.post('/users/filter', async (req, res) => {
+  try {
+      // Extract filters and specific search parameters from the request body
+      const { 
+          user_id, email, first_name, last_name, phone_no, 
+          dateFrom, dateTo, user_status, dept_name, location 
+      } = req.body;
+
+      // Build the base query
+      let query = `SELECT * FROM users WHERE 1=1`;
+
+      // Array to hold query parameters
+      const queryParams = [];
+
+      // Apply specific search filters
+      if (user_id) {
+          query += ` AND user_id = $${queryParams.length + 1}`;
+          queryParams.push(user_id);
       }
-    })
-    .catch(err => {
-      console.error('Error fetching user:', err);
-      res.status(500).json({ error: 'Internal server error' });
-    });
+
+      if (email) {
+          query += ` AND email = $${queryParams.length + 1}`;
+          queryParams.push(email);
+      }
+
+      if (first_name) {
+          query += ` AND first_name ILIKE $${queryParams.length + 1}`;
+          queryParams.push(`%${first_name}%`);
+      }
+
+      if (last_name) {
+          query += ` AND last_name ILIKE $${queryParams.length + 1}`;
+          queryParams.push(`%${last_name}%`);
+      }
+
+      if (phone_no) {
+          query += ` AND phone_no = $${queryParams.length + 1}`;
+          queryParams.push(phone_no);
+      }
+
+      // Apply date and status filters
+      if (dateFrom) {
+          query += ` AND created_at >= $${queryParams.length + 1}`;
+          queryParams.push(dateFrom);
+      }
+
+      if (dateTo) {
+          query += ` AND created_at <= $${queryParams.length + 1}`;
+          queryParams.push(dateTo);
+      }
+
+      if (user_status) {
+          query += ` AND user_status = $${queryParams.length + 1}`;
+          queryParams.push(user_status);
+      }
+
+      if (dept_name) {
+          query += ` AND dept_name = $${queryParams.length + 1}`;
+          queryParams.push(dept_name);
+      }
+
+      if (location) {
+          query += ` AND location = $${queryParams.length + 1}`;
+          queryParams.push(location);
+      }
+
+      // Execute the query
+      const result = await pool.query(query, queryParams);
+
+      // Send response with the filtered results
+      res.status(200).json(result.rows);
+  } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
 });
 
 
