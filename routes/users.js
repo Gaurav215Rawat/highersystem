@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Client } = require('pg');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const config = require('../config');
 
 const client = new Client(config.database);
