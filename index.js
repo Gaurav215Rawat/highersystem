@@ -427,7 +427,7 @@ app.put('/update-password', authenticateToken, async (req, res) => {
 });
 
 
-app.post('/users/filter', async (req, res) => {
+app.get('/users/filter', async (req, res) => {
   try {
       // Extract filters and specific search parameters from the request body
       const { 
@@ -502,10 +502,6 @@ app.post('/users/filter', async (req, res) => {
       console.error(err.message);
       res.status(500).json({ error: 'Server error' });
   }
-});
-
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
 });
 
 
