@@ -38,3 +38,4 @@ module.exports = {
 }}
 };
 
+//psql -h dpg-croff0q3esus73c0mmm0-a.singapore-postgres.render.com -p 5432 -U higherindia_backend_rlnw_user -d higherindia_backend_rlnw

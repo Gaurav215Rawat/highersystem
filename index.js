@@ -44,6 +44,10 @@ const createTables = () => {
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
       dept_name VARCHAR(20) REFERENCES departments(dept_name)  ON DELETE CASCADE,
+      location VARCHAR(20) NOT NULL,
+      emp_id VARCHAR(20) NOT NULL,
+      role VARCHAR(20) NOT NULL,
+      user_status VARCHAR(10) CHECK (status IN ('active', 'inactive')),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -204,14 +208,14 @@ app.post('/signup', [
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { first_name, last_name, email, phone_no, password, dept_name, api_access } = req.body;
+  const { first_name, last_name, email, phone_no, password, dept_name, api_access, location, emp_id, role, user_status } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const query = `
-      INSERT INTO users (first_name, last_name, email, phone_no, password, dept_name)
-      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`;
-    const values = [first_name, last_name, email, phone_no, hashedPassword, dept_name];
+      INSERT INTO users (first_name, last_name, email, phone_no, password, dept_name, location, emp_id, role, user_status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`;
+    const values = [first_name, last_name, email, phone_no, hashedPassword, dept_name, location, emp_id, role, user_status];
 
     const result = await client.query(query, values);
     const newUser = result.rows[0];
