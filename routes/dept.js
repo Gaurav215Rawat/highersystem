@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Client } = require('pg');
-
+const config = require('../config');
 // PostgreSQL database connection configuration
 const client = new Client(config.database);
 
