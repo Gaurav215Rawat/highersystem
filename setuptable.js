@@ -27,7 +27,7 @@ const createTablesQuery = `
       location VARCHAR(20) NOT NULL,
       emp_id VARCHAR(20) NOT NULL,
       role VARCHAR(20) NOT NULL,
-      user_status VARCHAR(10) CHECK (status IN ('active', 'inactive')),
+      user_status VARCHAR(10) CHECK (user_status IN ('active', 'inactive')),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
