@@ -8,10 +8,10 @@ const { body, validationResult } = require('express-validator');
 const jwt = require("jsonwebtoken");
 const config = require('./config');
 const app = express();
-const port = 3000;
+const port = 3001;
 
 // Enable CORS for all routes
-app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(cors({ origin: 'http://localhost:3001' }));
 
 // PostgreSQL database connection configuration
 const client = new Client(config.database);
