@@ -610,6 +610,28 @@ app.delete('/users', (req, res) => {
     });
 });
 
+// Get API access by user ID
+app.get('/id_user', (req, res) => {
+  const { id } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  client.query('SELECT * FROM users WHERE user_id = $1', [id])
+    .then(result => {
+      if (result.rows.length > 0) {
+        res.json(result.rows);  // Return all rows instead of just the first one
+      } else {
+        res.status(404).json({ error: 'User not found' });
+      }
+    })
+    .catch(err => {
+      console.error('Error fetching API access:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    });
+});
+
 
 
 
