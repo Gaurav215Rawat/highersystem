@@ -38,7 +38,7 @@ const createTables = () => {
 
     CREATE TABLE IF NOT EXISTS location (
       location_id SERIAL PRIMARY KEY,
-      locality VARCHAR(20) NOT NULL,
+      locality VARCHAR(20) UNIQUE NOT NULL,
       city VARCHAR(20) NOT NULL,
       state VARCHAR(20) NOT NULL,
       Country VARCHAR(30) NOT NULL,
