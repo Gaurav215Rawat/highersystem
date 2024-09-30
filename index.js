@@ -404,7 +404,7 @@ app.delete('/loc', (req, res) => {
 
 
 // POST API to add a new location
-app.post('/location', async (req, res) => {
+app.post('/loc', async (req, res) => {
   const { locality, city, state, country, code, remarks } = req.body;
 
   // Ensure required fields are provided
