@@ -55,7 +55,7 @@ const createTables = () => {
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
       dept_name VARCHAR(20) REFERENCES departments(dept_name)  ON DELETE CASCADE,
-      location VARCHAR(20) NOT NULL REFERENCES location(location_id)  ON DELETE CASCADE,
+      location VARCHAR(20) REFERENCES location(locality)  ON DELETE CASCADE,
       emp_id VARCHAR(20) NOT NULL,
       role VARCHAR(20) NOT NULL,
       user_status VARCHAR(10) CHECK (user_status IN ('active', 'inactive')),
