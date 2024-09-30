@@ -27,6 +27,7 @@ const createTables = () => {
     DROP TABLE IF EXISTS users CASCADE;
     DROP TABLE IF EXISTS api_access CASCADE;
     DROP TABLE IF EXISTS departments CASCADE;
+    DROP TABLE IF EXISTS location CASCADE;
 
 
      CREATE TABLE IF NOT EXISTS departments (
