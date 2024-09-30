@@ -36,6 +36,17 @@ const createTables = () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS location (
+      location_id SERIAL PRIMARY KEY,
+      locality VARCHAR(20) NOT NULL,
+      city VARCHAR(20) NOT NULL,
+      state VARCHAR(20) NOT NULL,
+      Country VARCHAR(30) NOT NULL,
+      code VARCHAR(15) NOT NULL,
+      remarks Text,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS users (
       user_id SERIAL PRIMARY KEY,
       first_name VARCHAR(20) NOT NULL,
@@ -44,7 +55,7 @@ const createTables = () => {
       phone_no VARCHAR(15) UNIQUE NOT NULL,
       password TEXT NOT NULL,
       dept_name VARCHAR(20) REFERENCES departments(dept_name)  ON DELETE CASCADE,
-      location VARCHAR(20) NOT NULL,
+      location VARCHAR(20) NOT NULL REFERENCES location(location_id)  ON DELETE CASCADE,
       emp_id VARCHAR(20) NOT NULL,
       role VARCHAR(20) NOT NULL,
       user_status VARCHAR(10) CHECK (user_status IN ('active', 'inactive')),
@@ -346,6 +357,81 @@ app.delete('/departments',(req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+// get locations
+app.get('/loc', (req, res) => {
+  client.query('SELECT * FROM location')
+    .then(result => res.json(result.rows))
+    .catch(err => {
+      console.error('Error fetching location:', err);
+      res.status(500).json({ error: 'Internal server error location' });
+    });
+});
+
+
+
+//delete location
+app.delete('/loc', (req, res) => {
+  const { id } = req.body; // Extract user_id from the request body
+  const query = 'DELETE FROM location WHERE location_id = $1 RETURNING *';
+
+  client.query(query, [id])
+    .then(result => {
+      if (result.rows.length > 0) {
+        res.json({ message: 'Deleted successfully', location: result.rows[0] });
+      } else {
+        res.status(404).json({ error: 'location not found' });
+      }
+    })
+    .catch(err => {
+      console.error('Error deleting location:', err);
+      res.status(500).json({ error: 'Internal server error in location' });
+    });
+});
+
+
+
+// POST API to add a new location
+app.post('/location', async (req, res) => {
+  const { locality, city, state, country, code, remarks } = req.body;
+
+  // Ensure required fields are provided
+  if (!locality || !city || !state || !country || !code) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  try {
+    // Query to insert the location data into the location table
+    const result = await client.query(
+      `INSERT INTO location (locality, city, state, country, code, remarks) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING *`, 
+       [locality, city, state, country, code, remarks]
+    );
+
+    res.status(201).json({ message: 'Location added successfully', location: result.rows[0] });
+  } catch (error) {
+    console.error('Error adding location:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
+
+
 
 
 
