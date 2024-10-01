@@ -174,7 +174,7 @@ const checkAccess = (apiName) => {
       })
       .catch(err => {
         console.error('Error checking API access:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: 'Internal server error',message:err.detail });
       });
   };
 };
@@ -245,7 +245,7 @@ app.post('/signup', [
     });
   } catch (err) {
     console.error('Error registering user:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error',message:err.detail });
   }
 });
 
@@ -284,7 +284,7 @@ app.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Error logging in:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error',message:err.detail });
   }
 });
 
@@ -325,7 +325,7 @@ app.get('/departments', async (req, res) => {
     res.status(200).json(result.rows);
   } catch (err) {
     console.error('Error retrieving departments:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error',message:err.detail });
   }
 });
 
@@ -337,7 +337,7 @@ app.get('/departments', async (req, res) => {
     res.status(200).json(result.rows);
   } catch (err) {
     console.error('Error retrieving departments:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error',message:err.detail });
   }
 });
 
@@ -355,7 +355,7 @@ app.delete('/departments',(req, res) => {
     })
     .catch(err => {
       console.error('Error deleting :', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -377,7 +377,7 @@ app.get('/loc', (req, res) => {
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching location:', err);
-      res.status(500).json({ error: 'Internal server error location' });
+      res.status(500).json({ error: 'Internal server error location',message:err.detail });
     });
 });
 
@@ -398,7 +398,7 @@ app.delete('/loc', (req, res) => {
     })
     .catch(err => {
       console.error('Error deleting location:', err);
-      res.status(500).json({ error: 'Internal server error in location' });
+      res.status(500).json({ error: 'Internal server error in location',message:err.detail });
     });
 });
 
@@ -425,7 +425,7 @@ app.post('/loc', async (req, res) => {
     res.status(201).json({ message: 'Location added successfully', location: result.rows[0] });
   } catch (error) {
     console.error('Error adding location:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ error: 'Internal server error',message:err.detail });
   }
 });
 
@@ -457,7 +457,7 @@ app.get('/getusers', (req, res) => {
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -467,7 +467,7 @@ app.get('/email_users', (req, res) => {
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -509,7 +509,7 @@ app.put('/update-password', authenticateToken, async (req, res) => {
     });
   } catch (err) {
     console.error('Error updating password:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({  error: 'Internal server error',message:err.detail });
   }
 });
 
@@ -587,7 +587,7 @@ app.get('/users/filter', async (req, res) => {
       res.status(200).json(result.rows);
   } catch (err) {
       console.error(err.message);
-      res.status(500).json({ error: 'Server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail });
   }
 });
 
@@ -606,7 +606,7 @@ app.delete('/users', (req, res) => {
     })
     .catch(err => {
       console.error('Error deleting user:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -628,7 +628,7 @@ app.get('/id_user', (req, res) => {
     })
     .catch(err => {
       console.error('Error fetching API access:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -648,7 +648,7 @@ app.get('/access', (req, res) => {
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -699,7 +699,7 @@ app.put('/update_access', authenticateToken, checkAccess('update_access'), async
     });
   } catch (err) {
     console.error('Error updating API access:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({  error: 'Internal server error',message:err.detail});
   }
 }); 
 
@@ -724,7 +724,7 @@ app.post('/verify-access', (req, res) => {
     })
     .catch(err => {
       console.error('Error verifying access:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error',message:err.detail});
     });
 });
 
@@ -747,7 +747,7 @@ app.get('/id_access', (req, res) => {
     })
     .catch(err => {
       console.error('Error fetching API access:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -783,7 +783,7 @@ app.post('/customers',authenticateToken,  checkAccess('create_customer'),(req, r
     })
     .catch(err => {
       console.error('Error inserting customer:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail});
     });
 });
 
@@ -793,7 +793,7 @@ app.get('/all-customers', authenticateToken, checkAccess('all_customer'), (req, 
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching customers:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -818,7 +818,7 @@ app.put('/customers/:id', authenticateToken,checkAccess('update_customer'), (req
     })
     .catch(err => {
       console.error('Error updating customer:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -836,7 +836,7 @@ app.delete('/customers/:id',authenticateToken, checkAccess('delete_customer'), (
     })
     .catch(err => {
       console.error('Error deleting customer:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail});
     });
 });
 
@@ -868,7 +868,7 @@ app.post('/contacts',authenticateToken, checkAccess('create_contact'), (req, res
     })
     .catch(err => {
       console.error('Error inserting contact:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -878,7 +878,7 @@ app.get('/all-contacts',authenticateToken, checkAccess('all_contact'), (req, res
     .then(result => res.json(result.rows))
     .catch(err => {
       console.error('Error fetching contacts:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail});
     });
 });
 
@@ -904,7 +904,7 @@ app.put('/contacts/:id',authenticateToken, checkAccess('update_contact'), (req, 
     })
     .catch(err => {
       console.error('Error updating contact:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({  error: 'Internal server error',message:err.detail });
     });
 });
 
@@ -922,6 +922,6 @@ app.delete('/contacts/:id',authenticateToken, checkAccess('delete_contact'), (re
     })
     .catch(err => {
       console.error('Error deleting contact:', err);
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error',message:err.detail});
     });
 });
