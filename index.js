@@ -314,7 +314,7 @@ app.post('/departments', async (req, res) => {
     });
   } catch (err) {
     console.error('Error adding department:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error',message:err.detail });
   }
 });
 
@@ -325,7 +325,7 @@ app.get('/departments', async (req, res) => {
     res.status(200).json(result.rows);
   } catch (err) {
     console.error('Error retrieving departments:', err);
-    res.status(500).json({ error: err,message:err.message });
+    res.status(500).json({ error: 'Internal server error',message:err.detail });
   }
 });
 
