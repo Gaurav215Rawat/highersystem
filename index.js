@@ -330,17 +330,6 @@ app.get('/departments', async (req, res) => {
 });
 
 
-// GET /departments - Retrieve all departments
-app.get('/departments', async (req, res) => {
-  try {
-    const result = await client.query('SELECT * FROM departments');
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('Error retrieving departments:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // Delete 
 app.delete('/departments',(req, res) => {
   const {id} = req.body;
@@ -520,7 +509,7 @@ app.get('/users/filter', async (req, res) => {
       const { 
           user_id, email, first_name, last_name, phone_no, 
           dateFrom, dateTo, user_status, dept_name, location 
-      } = req.body;
+      } = req.query;
 
       // Build the base query
       let query = `SELECT * FROM users WHERE 1=1`;
@@ -611,8 +600,8 @@ app.delete('/users', (req, res) => {
 });
 
 // Get API access by user ID
-app.get('/id_user', (req, res) => {
-  const { id } = req.body;
+app.get('/id_user/:id', (req, res) => {
+  const { id } = req.query;
 
   if (!id) {
     return res.status(400).json({ error: 'User ID is required' });
@@ -730,8 +719,8 @@ app.post('/verify-access', (req, res) => {
 
 
 // Get API access by user ID
-app.get('/id_access', (req, res) => {
-  const { id } = req.body;
+app.get('/id_access/:id', (req, res) => {
+  const { id } = req.params;
 
   if (!id) {
     return res.status(400).json({ error: 'User ID is required' });
