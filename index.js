@@ -28,6 +28,8 @@ const createTables = () => {
     DROP TABLE IF EXISTS api_access CASCADE;
     DROP TABLE IF EXISTS departments CASCADE;
     DROP TABLE IF EXISTS location CASCADE;
+    DROP TABLE IF EXISTS form_fields CASCADE;
+    DROP TABLE IF EXISTS dynamic_form_data CASCADE;
 
 
      CREATE TABLE IF NOT EXISTS departments (
@@ -314,7 +316,7 @@ app.post('/login', async (req, res) => {
 // Endpoint to get form fields
 app.get('/form-fields', async (req, res) => {
   try {
-      const result = await pool.query('SELECT * FROM form_fields');
+      const result = await client.query('SELECT * FROM form_fields');
       res.json(result.rows);
   } catch (err) {
       console.error('Error fetching form fields:', err);
@@ -332,7 +334,7 @@ app.post('/submit', async (req, res) => {
   try {
       // Validate existing form data
       for (const [fieldName, value] of Object.entries(formData)) {
-          const result = await pool.query('SELECT field_type FROM form_fields WHERE field_name = $1', [fieldName]);
+          const result = await client.query('SELECT field_type FROM form_fields WHERE field_name = $1', [fieldName]);
           if (result.rows.length > 0) {
               const fieldType = result.rows[0].field_type;
 
@@ -355,14 +357,14 @@ app.post('/submit', async (req, res) => {
           const { name, type, enumValues } = field;
 
           // Insert new field into form_fields
-          await pool.query(
+          await client.query(
               `INSERT INTO form_fields (field_name, field_type, enum_values) VALUES ($1, $2, $3) 
               ON CONFLICT (field_name) DO UPDATE SET field_type = EXCLUDED.field_type, enum_values = EXCLUDED.enum_values`,
               [name, type, enumValues]
           );
 
           // Alter the dynamic_form_data table to add a new column if it doesn't exist
-          await pool.query(
+          await client.query(
               `DO $$ 
               BEGIN 
                   IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
@@ -379,7 +381,7 @@ app.post('/submit', async (req, res) => {
       const columns = Object.keys(formData).map(field => `"${field}"`).join(', ');
       const values = Object.values(formData);
 
-      await pool.query(
+      await client.query(
           `INSERT INTO dynamic_form_data (${columns}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')})`,
           values
       );
