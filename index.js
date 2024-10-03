@@ -110,18 +110,19 @@ const createTables = () => {
 
     -- Create the dynamic_form_data table
 
-    CREATE TABLE IF NOT EXISTS form_fields (
+    CREATE TABLE form_fields (
     id SERIAL PRIMARY KEY,
-    field_name VARCHAR(255) NOT NULL UNIQUE,
-    field_type ENUM('string', 'number', 'boolean') NOT NULL
-    );
+    field_name VARCHAR(255) UNIQUE NOT NULL,
+    field_type VARCHAR(50) CHECK (field_type IN ('string', 'number', 'boolean', 'enum')),
+    enum_values TEXT[] -- Use an array for enum values if necessary
+);
 
-
-   CREATE TABLE IF NOT EXISTS dynamic_form_data (
+CREATE TABLE dynamic_form_data (
     id SERIAL PRIMARY KEY,
-    submission_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    -- Additional fields will be added dynamically based on user input
-   );
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- Additional columns will be added dynamically
+);
+
 
   `;
 
@@ -311,101 +312,84 @@ app.post('/login', async (req, res) => {
 
 
 // Endpoint to get form fields
-app.get('/form-fields', (req, res) => {
-  connection.query('SELECT * FROM form_fields', (err, results) => {
-      if (err) {
-          return res.status(500).json({ error: 'Error fetching form fields.' });
-      }
-      res.json(results);
-  });
+app.get('/form-fields', async (req, res) => {
+  try {
+      const result = await pool.query('SELECT * FROM form_fields');
+      res.json(result.rows);
+  } catch (err) {
+      console.error('Error fetching form fields:', err);
+      res.status(500).send('Server error');
+  }
 });
 
 // Endpoint to submit form data
-app.post('/submit', (req, res) => {
+app.post('/submit', async (req, res) => {
   const formData = req.body.formData; // Get form data
   const newFields = req.body.newFields; // Get new fields from the request
 
-  // Validate form data
   const validationErrors = [];
-  const fieldTypes = {};
 
-  // Retrieve field types for validation
-  connection.query('SELECT field_name, field_type FROM form_fields', (err, results) => {
-      if (err) return res.status(500).json({ error: 'Error retrieving field types.' });
+  try {
+      // Validate existing form data
+      for (const [fieldName, value] of Object.entries(formData)) {
+          const result = await pool.query('SELECT field_type FROM form_fields WHERE field_name = $1', [fieldName]);
+          if (result.rows.length > 0) {
+              const fieldType = result.rows[0].field_type;
 
-      results.forEach(row => {
-          fieldTypes[row.field_name] = row.field_type;
-      });
-
-      Object.entries(formData).forEach(([fieldName, value]) => {
-          const fieldType = fieldTypes[fieldName];
-
-          if (fieldType) {
-              // Validate based on field type
+              // Validate the value
               if (fieldType === 'number' && isNaN(value)) {
                   validationErrors.push(`Field "${fieldName}" must be a number.`);
               } else if (fieldType === 'boolean' && typeof value !== 'boolean') {
                   validationErrors.push(`Field "${fieldName}" must be a boolean.`);
               }
           }
-      });
+      }
 
-      // If there are validation errors, send a response with errors
+      // If validation errors exist, send a response with errors
       if (validationErrors.length > 0) {
           return res.status(400).json({ errors: validationErrors });
       }
 
       // Insert new fields into form_fields and add columns to dynamic_form_data
-      const fieldInsertions = newFields.map(field => {
-          return new Promise((resolve, reject) => {
-              const { name, type } = field;
+      for (const field of newFields) {
+          const { name, type, enumValues } = field;
 
-              // Insert new field into form_fields
-              connection.query(
-                  `INSERT INTO form_fields (field_name, field_type) VALUES (?, ?) ON DUPLICATE KEY UPDATE field_type = ?`,
-                  [name, type, type],
-                  (err) => {
-                      if (err) return reject(err);
+          // Insert new field into form_fields
+          await pool.query(
+              `INSERT INTO form_fields (field_name, field_type, enum_values) VALUES ($1, $2, $3) 
+              ON CONFLICT (field_name) DO UPDATE SET field_type = EXCLUDED.field_type, enum_values = EXCLUDED.enum_values`,
+              [name, type, enumValues]
+          );
 
-                      // Alter the dynamic_form_data table to add a new column if it doesn't exist
-                      connection.query(
-                          `ALTER TABLE dynamic_form_data ADD COLUMN IF NOT EXISTS ?? ${type === 'number' ? 'DOUBLE' : 'VARCHAR(255)'}`,
-                          [name],
-                          (err) => {
-                              if (err) return reject(err);
-                              resolve();
-                          }
-                      );
-                  }
-              );
-          });
-      });
+          // Alter the dynamic_form_data table to add a new column if it doesn't exist
+          await pool.query(
+              `DO $$ 
+              BEGIN 
+                  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name='dynamic_form_data' AND column_name=$1) 
+                  THEN 
+                      ALTER TABLE dynamic_form_data ADD COLUMN $1 ${type === 'number' ? 'DOUBLE PRECISION' : 'VARCHAR(255)'};
+                  END IF; 
+              END $$;`,
+              [name]
+          );
+      }
 
-      // Wait for all new fields to be processed
-      Promise.all(fieldInsertions)
-          .then(() => {
-              // Insert the form data into dynamic_form_data
-              const columns = Object.keys(formData).map(field => `??`).join(', ');
-              const values = Object.values(formData);
+      // Insert the form data into dynamic_form_data
+      const columns = Object.keys(formData).map(field => `"${field}"`).join(', ');
+      const values = Object.values(formData);
 
-              connection.query(
-                  `INSERT INTO dynamic_form_data (${columns}) VALUES (${values.map(() => '?').join(', ')})`,
-                  [...Object.keys(formData), ...values],
-                  (err) => {
-                      if (err) {
-                          return res.status(500).json({ error: 'Error inserting form data.' });
-                      }
-                      res.json({ message: 'Data submitted successfully!' });
-                  }
-              );
-          })
-          .catch(err => {
-              console.error('Error processing field insertions:', err);
-              res.status(500).json({ error: 'Error processing field insertions.' });
-          });
-  });
+      await pool.query(
+          `INSERT INTO dynamic_form_data (${columns}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')})`,
+          values
+      );
+
+      res.json({ message: 'Data submitted successfully!' });
+  } catch (err) {
+      console.error('Error submitting form data:', err);
+      res.status(500).send('Server error');
+  }
 });
-
 
 
 
