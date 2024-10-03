@@ -105,6 +105,24 @@ const createTables = () => {
       user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
       api_name VARCHAR(100)
     );
+
+
+
+    -- Create the dynamic_form_data table
+
+    CREATE TABLE IF NOT EXISTS form_fields (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    field_name VARCHAR(255) NOT NULL UNIQUE,
+    field_type ENUM('string', 'number', 'boolean') NOT NULL
+    );
+
+
+   CREATE TABLE IF NOT EXISTS dynamic_form_data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    submission_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- Additional fields will be added dynamically based on user input
+   );
+
   `;
 
   return client.query(createTablesQuery);
@@ -287,6 +305,107 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
+
+
+
+// Endpoint to get form fields
+app.get('/form-fields', (req, res) => {
+  connection.query('SELECT * FROM form_fields', (err, results) => {
+      if (err) {
+          return res.status(500).json({ error: 'Error fetching form fields.' });
+      }
+      res.json(results);
+  });
+});
+
+// Endpoint to submit form data
+app.post('/submit', (req, res) => {
+  const formData = req.body.formData; // Get form data
+  const newFields = req.body.newFields; // Get new fields from the request
+
+  // Validate form data
+  const validationErrors = [];
+  const fieldTypes = {};
+
+  // Retrieve field types for validation
+  connection.query('SELECT field_name, field_type FROM form_fields', (err, results) => {
+      if (err) return res.status(500).json({ error: 'Error retrieving field types.' });
+
+      results.forEach(row => {
+          fieldTypes[row.field_name] = row.field_type;
+      });
+
+      Object.entries(formData).forEach(([fieldName, value]) => {
+          const fieldType = fieldTypes[fieldName];
+
+          if (fieldType) {
+              // Validate based on field type
+              if (fieldType === 'number' && isNaN(value)) {
+                  validationErrors.push(`Field "${fieldName}" must be a number.`);
+              } else if (fieldType === 'boolean' && typeof value !== 'boolean') {
+                  validationErrors.push(`Field "${fieldName}" must be a boolean.`);
+              }
+          }
+      });
+
+      // If there are validation errors, send a response with errors
+      if (validationErrors.length > 0) {
+          return res.status(400).json({ errors: validationErrors });
+      }
+
+      // Insert new fields into form_fields and add columns to dynamic_form_data
+      const fieldInsertions = newFields.map(field => {
+          return new Promise((resolve, reject) => {
+              const { name, type } = field;
+
+              // Insert new field into form_fields
+              connection.query(
+                  `INSERT INTO form_fields (field_name, field_type) VALUES (?, ?) ON DUPLICATE KEY UPDATE field_type = ?`,
+                  [name, type, type],
+                  (err) => {
+                      if (err) return reject(err);
+
+                      // Alter the dynamic_form_data table to add a new column if it doesn't exist
+                      connection.query(
+                          `ALTER TABLE dynamic_form_data ADD COLUMN IF NOT EXISTS ?? ${type === 'number' ? 'DOUBLE' : 'VARCHAR(255)'}`,
+                          [name],
+                          (err) => {
+                              if (err) return reject(err);
+                              resolve();
+                          }
+                      );
+                  }
+              );
+          });
+      });
+
+      // Wait for all new fields to be processed
+      Promise.all(fieldInsertions)
+          .then(() => {
+              // Insert the form data into dynamic_form_data
+              const columns = Object.keys(formData).map(field => `??`).join(', ');
+              const values = Object.values(formData);
+
+              connection.query(
+                  `INSERT INTO dynamic_form_data (${columns}) VALUES (${values.map(() => '?').join(', ')})`,
+                  [...Object.keys(formData), ...values],
+                  (err) => {
+                      if (err) {
+                          return res.status(500).json({ error: 'Error inserting form data.' });
+                      }
+                      res.json({ message: 'Data submitted successfully!' });
+                  }
+              );
+          })
+          .catch(err => {
+              console.error('Error processing field insertions:', err);
+              res.status(500).json({ error: 'Error processing field insertions.' });
+          });
+  });
+});
+
 
 
 
