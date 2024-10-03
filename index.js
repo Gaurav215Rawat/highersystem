@@ -111,14 +111,14 @@ const createTables = () => {
     -- Create the dynamic_form_data table
 
     CREATE TABLE IF NOT EXISTS form_fields (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT SERIAL PRIMARY KEY,
     field_name VARCHAR(255) NOT NULL UNIQUE,
     field_type ENUM('string', 'number', 'boolean') NOT NULL
     );
 
 
    CREATE TABLE IF NOT EXISTS dynamic_form_data (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT SERIAL PRIMARY KEY,
     submission_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     -- Additional fields will be added dynamically based on user input
    );
