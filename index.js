@@ -601,7 +601,7 @@ app.delete('/users', (req, res) => {
 
 // Get API access by user ID
 app.get('/id_user/:id', (req, res) => {
-  const { id } = req.query;
+  const id = req.params.id;
 
   if (!id) {
     return res.status(400).json({ error: 'User ID is required' });
@@ -720,7 +720,7 @@ app.post('/verify-access', (req, res) => {
 
 // Get API access by user ID
 app.get('/id_access/:id', (req, res) => {
-  const { id } = req.params;
+  const id = req.params.id;
 
   if (!id) {
     return res.status(400).json({ error: 'User ID is required' });
