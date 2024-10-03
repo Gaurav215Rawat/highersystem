@@ -354,13 +354,13 @@ app.post('/submit', async (req, res) => {
 
       // Insert new fields into form_fields and add columns to dynamic_form_data
       for (const field of newFields) {
-          const { name, type, enumValues } = field;
+          const { name, type } = field;
 
           // Insert new field into form_fields
           await client.query(
-              `INSERT INTO form_fields (field_name, field_type, enum_values) VALUES ($1, $2, $3) 
-              ON CONFLICT (field_name) DO UPDATE SET field_type = EXCLUDED.field_type, enum_values = EXCLUDED.enum_values`,
-              [name, type, enumValues]
+              `INSERT INTO form_fields (field_name, field_type) VALUES ($1, $2) 
+              ON CONFLICT (field_name) DO UPDATE SET field_type = EXCLUDED.field_type`,
+              [name, type]
           );
 
           // Alter the dynamic_form_data table to add a new column if it doesn't exist
@@ -370,10 +370,10 @@ app.post('/submit', async (req, res) => {
                   IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                   WHERE table_name='dynamic_form_data' AND column_name=$1) 
                   THEN 
-                      ALTER TABLE dynamic_form_data ADD COLUMN $1 ${type === 'number' ? 'DOUBLE PRECISION' : 'VARCHAR(255)'};
+                      EXECUTE 'ALTER TABLE dynamic_form_data ADD COLUMN "' || $1 || '" ' || ($2 = 'number' ? 'DOUBLE PRECISION' : 'VARCHAR(255)');
                   END IF; 
               END $$;`,
-              [name]
+              [name, type]
           );
       }
 
@@ -392,6 +392,7 @@ app.post('/submit', async (req, res) => {
       res.status(500).send('Server error');
   }
 });
+
 
 
 
