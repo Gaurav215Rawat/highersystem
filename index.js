@@ -318,80 +318,119 @@ app.get('/form-fields', async (req, res) => {
   try {
       const result = await client.query('SELECT * FROM form_fields');
       res.json(result.rows);
-  } catch (err) {
-      console.error('Error fetching form fields:', err);
-      res.status(500).send('Server error');
+  } catch (error) {
+      console.error('Error fetching form fields:', error);
+      res.status(500).send('Error fetching form fields');
   }
 });
 
-// Endpoint to submit form data
+// Endpoint to get form fields
+app.get('/form', async (req, res) => {
+  try {
+      const result = await client.query('SELECT * FROM dynamic_form_data');
+      res.json(result.rows);
+  } catch (error) {
+      console.error('Error fetching form fields:', error);
+      res.status(500).send('Error fetching form fields');
+  }
+});
+
+
+
 app.post('/submit', async (req, res) => {
   const formData = req.body.formData; // Get form data
   const newFields = req.body.newFields; // Get new fields from the request
 
-  const validationErrors = [];
-
   try {
-      // Validate existing form data
-      for (const [fieldName, value] of Object.entries(formData)) {
-          const result = await client.query('SELECT field_type FROM form_fields WHERE field_name = $1', [fieldName]);
-          if (result.rows.length > 0) {
-              const fieldType = result.rows[0].field_type;
+      // Step 1: Get the current schema of the table
+      const getSchemaQuery = `
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='dynamic_form_data'
+      `;
+      const schemaResult = await client.query(getSchemaQuery);
 
-              // Validate the value
-              if (fieldType === 'number' && isNaN(value)) {
-                  validationErrors.push(`Field "${fieldName}" must be a number.`);
-              } else if (fieldType === 'boolean' && typeof value !== 'boolean') {
-                  validationErrors.push(`Field "${fieldName}" must be a boolean.`);
+      // Create a set of existing column names
+      const existingColumns = new Set(schemaResult.rows.map(row => row.column_name));
+      console.log('Existing columns:', existingColumns);
+
+      // Step 2: Add new fields if they don't exist and insert them into form_fields
+      for (const field of newFields) {
+          let { name, type } = field;
+
+          console.log('Processing field:', field);
+
+          // Normalize field type to match the allowed types in form_fields
+          if (type === 'text') {
+              type = 'string'; // Replace 'text' with 'string' if that is the valid type
+          }
+
+          // If the column doesn't exist, add it to the table
+          if (!existingColumns.has(name)) {
+              let columnType;
+              if (type === 'number') {
+                  columnType = 'DOUBLE PRECISION';
+              } else if (type === 'boolean') {
+                  columnType = 'BOOLEAN';
+              } else if (type === 'string') {
+                  columnType = 'TEXT'; // Handle both 'string' and 'text' as TEXT
+              } else {
+                  throw new Error(`Unsupported field type: ${type}`);
               }
+
+              console.log(`Adding new column: ${name} with type: ${columnType}`);
+
+              const alterTableQuery = `
+                ALTER TABLE dynamic_form_data 
+                ADD COLUMN "${name}" ${columnType};
+              `;
+
+              await client.query(alterTableQuery);
+              console.log(`Column ${name} added successfully.`);
+
+              // Insert into form_fields to record the new field metadata
+              const insertFormFieldsQuery = `
+                INSERT INTO form_fields (field_name, field_type) 
+                VALUES ($1, $2)
+              `;
+              await client.query(insertFormFieldsQuery, [name, type]);
+              console.log(`Field ${name} inserted into form_fields.`);
+
+              // Update the existing columns set
+              existingColumns.add(name);
+          } else {
+              console.log(`Column ${name} already exists, skipping...`);
           }
       }
 
-      // If validation errors exist, send a response with errors
-      if (validationErrors.length > 0) {
-          return res.status(400).json({ errors: validationErrors });
+      // Step 3: Handle the form data insertion
+      const columns = Object.keys(formData).filter(field => existingColumns.has(field)).map(field => `"${field}"`).join(', ');
+      const values = Object.keys(formData).filter(field => existingColumns.has(field)).map(field => formData[field]);
+      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+
+      if (columns.length === 0) {
+          return res.status(400).json({ error: 'No valid columns to insert.' });
       }
 
-      // Insert new fields into form_fields and add columns to dynamic_form_data
-      for (const field of newFields) {
-          const { name, type } = field;
+      const insertQuery = `INSERT INTO dynamic_form_data (${columns}) VALUES (${placeholders})`;
 
-          // Insert new field into form_fields
-          await client.query(
-              `INSERT INTO form_fields (field_name, field_type) VALUES ($1, $2) 
-              ON CONFLICT (field_name) DO UPDATE SET field_type = EXCLUDED.field_type`,
-              [name, type]
-          );
+      // Log the query and values for debugging
+      console.log('Insert Query:', insertQuery);
+      console.log('Values:', values);
 
-          // Alter the dynamic_form_data table to add a new column if it doesn't exist
-          await client.query(
-              `DO $$ 
-              BEGIN 
-                  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                  WHERE table_name='dynamic_form_data' AND column_name=$1) 
-                  THEN 
-                      EXECUTE 'ALTER TABLE dynamic_form_data ADD COLUMN "' || $1 || '" ' || ($2 = 'number' ? 'DOUBLE PRECISION' : 'VARCHAR(255)');
-                  END IF; 
-              END $$;`,
-              [name, type]
-          );
-      }
-
-      // Insert the form data into dynamic_form_data
-      const columns = Object.keys(formData).map(field => `"${field}"`).join(', ');
-      const values = Object.values(formData);
-
-      await client.query(
-          `INSERT INTO dynamic_form_data (${columns}) VALUES (${values.map((_, i) => `$${i + 1}`).join(', ')})`,
-          values
-      );
+      // Execute the insert query
+      await client.query(insertQuery, values);
 
       res.json({ message: 'Data submitted successfully!' });
-  } catch (err) {
-      console.error('Error submitting form data:', err);
-      res.status(500).send('Server error');
+  } catch (error) {
+      console.error('Error submitting form data:', error);
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
+
+
 
 
 
