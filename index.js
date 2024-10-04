@@ -119,7 +119,7 @@ console.log("4");
 
 
 // Use the same secret key for signing and verifying the tokens
-const JWT_SECRET = process.env.JWT_SECRET; // Use environment variable
+const JWT_SECRET ="mysecret"; // Use environment variable
 
 // Middleware to verify JWT and attach user info to req.user
 const authenticateToken = (req, res, next) => {
