@@ -607,8 +607,8 @@ app.get('/email_users', (req, res) => {
 
 
 // Route for updating the password (only super_admin can update, but not their own password)
-app.put('/update-password', authenticateToken, async (req, res) => {
-  const { email, newPassword } = req.body;
+app.put('/update-password', async (req, res) => {
+  const { email, newPassword, confirmPassword } = req.body;
   const { email: requesterEmail } = req.user; // Email of the user making the request
 
   try {
@@ -620,6 +620,11 @@ app.put('/update-password', authenticateToken, async (req, res) => {
     // Check if the email to be updated is superadmin's email
     if (email === 'superadmin@gmail.com') {
       return res.status(403).json({ error: 'Superadmin password cannot be changed.' });
+    }
+
+    // Ensure newPassword and confirmPassword match
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'New password and confirm password do not match.' });
     }
 
     // Retrieve the user by email
@@ -646,6 +651,7 @@ app.put('/update-password', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 app.get('/users/filter', async (req, res) => {
