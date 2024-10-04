@@ -2,21 +2,18 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
-const moment = require('moment');
 const { body, validationResult } = require('express-validator');
 const jwt = require("jsonwebtoken");
-const config = require('./config');
 const { pool } = require("./config");
-require('dotenv').config();
 const app = express();
 const port = process.env.PORT; // Use environment variable or default to 3001
 
 // Enable CORS
 app.use(cors({ origin: 'http://localhost:3001' }));
-
+console.log("1");
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
-
+console.log(2);
 // Function to create tables if they don't exist
 const createTables = async () => {
   const client = await pool.connect();
@@ -116,7 +113,10 @@ const createTables = async () => {
 };
 
 // Call createTables function to set up the database
+console.log("3");
 createTables();
+console.log("4");
+
 
 // Use the same secret key for signing and verifying the tokens
 const JWT_SECRET = process.env.JWT_SECRET; // Use environment variable
