@@ -38,17 +38,33 @@
 //       rejectUnauthorized: false
 // }}
 // };
-const {Pool}=require('pg');
-const dbConnect={
-  connectionString: 'postgresql://higherindia_backend_rlnw_user:a1L9MWheQ3eobbyOS7OL2G7QvwZDdqTO@dpg-croff0q3esus73c0mmm0-a.singapore-postgres.render.com/higherindia_backend_rlnw',
-     //connectionString: 'postgresql://HIGHER:Higher@123@higherdb01.ct7tofa2ajsn.ap-south-1.rds.amazonaws.com:5432/HIGHER',
+
+
+
+
+// const {Pool}=require('pg');
+// const dbConnect={
+//   connectionString: 'postgresql://higherindia_backend_rlnw_user:a1L9MWheQ3eobbyOS7OL2G7QvwZDdqTO@dpg-croff0q3esus73c0mmm0-a.singapore-postgres.render.com/higherindia_backend_rlnw',
+//      //connectionString: 'postgresql://HIGHER:Higher@123@higherdb01.ct7tofa2ajsn.ap-south-1.rds.amazonaws.com:5432/HIGHER',
   
-    ssl: {
-      rejectUnauthorized: false
-  }};
+//     ssl: {
+//       rejectUnauthorized: false
+//   }};
 
-const pool=new Pool(dbConnect);
+// const pool=new Pool(dbConnect);
 
-module.exports={pool};
-//psql -h dpg-croff0q3esus73c0mmm0-a.singapore-postgres.render.com -p 5432 -U higherindia_backend_rlnw_user -d higherindia_backend_rlnw
+// module.exports={pool};
+// //psql -h dpg-croff0q3esus73c0mmm0-a.singapore-postgres.render.com -p 5432 -U higherindia_backend_rlnw_user -d higherindia_backend_rlnw
 
+
+
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  connectionString: 'postgresql://higherindia_backend_rlnw_user:a1L9MWheQ3eobbyOS7OL2G7QvwZDdqTO@dpg-croff0q3esus73c0mmm0-a.singapore-postgres.render.com/higherindia_backend_rlnw', // This should point to your database URL
+  ssl: {
+    rejectUnauthorized: false, // Required for most managed databases, including Render
+  }
+});
+
+module.exports = { pool };
