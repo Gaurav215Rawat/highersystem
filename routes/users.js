@@ -188,7 +188,7 @@ router.delete('/', async (req, res) => {
 
 
 // Get API access by user ID
-app.get('/id_user/:id', (req, res) => {
+router.get('/id_user/:id', (req, res) => {
     const id = req.params.id;
   
     if (!id) {
