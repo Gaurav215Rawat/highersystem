@@ -12,7 +12,7 @@ const app = express();
 const port = process.env.PORT; // Use environment variable or default to 3001
 
 // Enable CORS
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000' })); // Allow dynamic origin
+app.use(cors({ origin: 'http://localhost:3001' }));
 
 // Middleware to parse JSON bodies
 app.use(bodyParser.json());
