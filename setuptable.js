@@ -14,6 +14,17 @@ const createTablesQuery = `
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
 
+   CREATE TABLE IF NOT EXISTS location (
+      location_id SERIAL PRIMARY KEY,
+      locality VARCHAR(20) UNIQUE NOT NULL,
+      city VARCHAR(20) NOT NULL,
+      state VARCHAR(20) NOT NULL,
+      country VARCHAR(30) NOT NULL,
+      code VARCHAR(15) NOT NULL,
+      remarks Text,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
   CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     first_name VARCHAR(20) NOT NULL,
