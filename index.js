@@ -381,9 +381,6 @@ app.post('/reset-password', async (req, res) => {
     `;
     await pool.query(query, [hashedPassword, email]);
 
-    // Clear OTP after successful password reset
-    delete otpStore[email];
-
     res.status(200).json({ message: 'Password updated successfully' });
   } catch (err) {
     console.error('Error resetting password:', err);
