@@ -6,7 +6,7 @@ const { body, validationResult } = require('express-validator');
 const jwt = require("jsonwebtoken");
 const { pool } = require("./config");
 const app = express();
-const port = process.env.PORT; // Use environment variable or default to 3001
+const port = 3001; // Use environment variable or default to 3001
 
 // Enable CORS
 app.use(cors({ origin: 'http://localhost:3001' }));
