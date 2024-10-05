@@ -61,8 +61,8 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-    connectionString: 'postgresql://higherindia_backend_rlnw_user:a1L9MWheQ3eobbyOS7OL2G7QvwZDdqTO@dpg-croff0q3esus73c0mmm0-a.singapore-postgres.render.com/higherindia_backend_rlnw', // This should point to your database URL
-    //connectionString: 'postgresql://HIGHER:Higher@123@higherdb01.ct7tofa2ajsn.ap-south-1.rds.amazonaws.com:5432/HIGHER',
+    //connectionString: 'postgresql://higherindia_backend_rlnw_user:a1L9MWheQ3eobbyOS7OL2G7QvwZDdqTO@dpg-croff0q3esus73c0mmm0-a.singapore-postgres.render.com/higherindia_backend_rlnw', // This should point to your database URL
+    connectionString: 'postgresql://HIGHER:Higher@123@higherdb01.ct7tofa2ajsn.ap-south-1.rds.amazonaws.com:5432/HIGHER',
   
   ssl: {
     rejectUnauthorized: false, // Required for most managed databases, including Render
