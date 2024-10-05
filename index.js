@@ -309,11 +309,8 @@ app.post('/request-otp', async (req, res) => {
 
 
     //Update user table with OTP
-
     const updateQuery = 'UPDATE users SET otp_code = $1 WHERE email = $2';
     await pool.query(updateQuery, [otp, email]);
-
-
 
 
     // Send the OTP via email
@@ -379,7 +376,7 @@ app.post('/reset-password', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const query = `
       UPDATE users
-      SET password = $1, password_reset = true
+      SET password = $1, password_reset = true , otp_code = NULL
       WHERE email = $2
     `;
     await pool.query(query, [hashedPassword, email]);
@@ -390,7 +387,7 @@ app.post('/reset-password', async (req, res) => {
     res.status(200).json({ message: 'Password updated successfully' });
   } catch (err) {
     console.error('Error resetting password:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error',message:err.details });
   }
 });
 
