@@ -1,5 +1,4 @@
-const { pool } = require('./config');
-const config = require('./config');  // Ensure your config contains correct DB credentials
+const { pool } = require('./config');  // Importing the pool directly from config.js
 
 const createTablesQuery = `
   DROP TABLE IF EXISTS contacts CASCADE;
@@ -74,8 +73,6 @@ const createTablesQuery = `
   );
 `;
 
-const pool = new pool(config.database);  // Using Pool for connection pooling
-
 async function createTables() {
   const client = await pool.connect();  // Get a client from the pool
   try {
@@ -91,4 +88,4 @@ async function createTables() {
 createTables();  // Run the table creation script
 
 // Optionally, close the pool when done (for example, when shutting down the app)
-pool.end()
+pool.end();
