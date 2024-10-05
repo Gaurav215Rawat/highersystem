@@ -1,4 +1,4 @@
-const { Pool } = require('./config');
+const { pool } = require('./config');
 const config = require('./config');  // Ensure your config contains correct DB credentials
 
 const createTablesQuery = `
@@ -74,7 +74,7 @@ const createTablesQuery = `
   );
 `;
 
-const pool = new Pool(config.database);  // Using Pool for connection pooling
+const pool = new pool(config.database);  // Using Pool for connection pooling
 
 async function createTables() {
   const client = await pool.connect();  // Get a client from the pool
