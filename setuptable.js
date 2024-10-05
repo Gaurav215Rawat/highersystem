@@ -31,7 +31,7 @@ const createTablesQuery = `
     last_name VARCHAR(20) NOT NULL,
     email VARCHAR(30) UNIQUE NOT NULL,
     phone_no VARCHAR(15) UNIQUE NOT NULL,
-    password TEXT NOT NULL,
+    password TEXT,
     dept_name VARCHAR(20) REFERENCES departments(dept_name) ON DELETE CASCADE,
     location VARCHAR(20) NOT NULL,
     emp_id VARCHAR(20) NOT NULL,

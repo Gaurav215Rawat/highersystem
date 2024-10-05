@@ -51,7 +51,7 @@ const createTables = async () => {
       last_name VARCHAR(20) NOT NULL,
       email VARCHAR(30) UNIQUE NOT NULL,
       phone_no VARCHAR(15) UNIQUE NOT NULL,
-      password TEXT NOT NULL,
+      password TEXT,
       dept_name VARCHAR(20) REFERENCES departments(dept_name)  ON DELETE CASCADE,
       location VARCHAR(20) REFERENCES location(locality)  ON DELETE CASCADE,
       emp_id VARCHAR(20) NOT NULL,
@@ -198,7 +198,7 @@ app.post('/signup', [
   const { first_name, last_name, email, phone_no, password, dept_name, api_access, location, emp_id, role, user_status } = req.body;
 
   try {
-    
+
     let hashedPassword = null;
     if (password) {
       hashedPassword = await bcrypt.hash(password, 10);
