@@ -198,7 +198,11 @@ app.post('/signup', [
   const { first_name, last_name, email, phone_no, password, dept_name, api_access, location, emp_id, role, user_status } = req.body;
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    let hashedPassword = null;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
     
     // Check if the user being registered is the superadmin
     const passwordResetValue = email === 'superadmin@gmail.com' ? true : false;
