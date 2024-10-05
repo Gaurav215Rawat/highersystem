@@ -310,7 +310,7 @@ app.post('/request-otp', async (req, res) => {
 
     //Update user table with OTP
 
-    const updateQuery = 'UPDATE users SET otp_code = $1 WHERE email = $3';
+    const updateQuery = 'UPDATE users SET otp_code = $1 WHERE email = $2';
     await pool.query(updateQuery, [otp, email]);
 
 
