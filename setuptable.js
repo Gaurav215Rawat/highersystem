@@ -6,6 +6,9 @@ const createTablesQuery = `
   DROP TABLE IF EXISTS users CASCADE;
   DROP TABLE IF EXISTS api_access CASCADE;
   DROP TABLE IF EXISTS departments CASCADE;
+  DROP TABLE IF EXISTS designation CASCADE;
+  DROP TABLE IF EXISTS role CASCADE;
+  DROP TABLE IF EXISTS domain CASCADE;
 
   CREATE TABLE IF NOT EXISTS departments (
     dept_id SERIAL PRIMARY KEY,
@@ -23,6 +26,27 @@ const createTablesQuery = `
       code VARCHAR(15) NOT NULL,
       remarks Text,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+     CREATE TABLE IF NOT EXISTS designation (
+      desig_id SERIAL PRIMARY KEY,
+      designation VARCHAR(100) UNIQUE NOT NULL, 
+      description TEXT  -- Description of the designation
+    );
+
+
+    CREATE TABLE IF NOT EXISTS role (
+      role_id SERIAL PRIMARY KEY,
+      role VARCHAR(100) UNIQUE NOT NULL,  
+      description TEXT,  -- Description of the role
+      access VARCHAR(100)  -- Access level associated with the role (can store access details)
+    );
+
+
+    CREATE TABLE IF NOT EXISTS domain (
+      dom_id SERIAL PRIMARY KEY,
+      domain_name VARCHAR(100) UNIQUE NOT NULL,
+      description TEXT  
     );
 
   CREATE TABLE IF NOT EXISTS users (

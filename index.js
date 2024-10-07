@@ -25,6 +25,9 @@ const createTables = async () => {
       DROP TABLE IF EXISTS api_access CASCADE;
       DROP TABLE IF EXISTS departments CASCADE;
       DROP TABLE IF EXISTS location CASCADE;
+      DROP TABLE IF EXISTS designation CASCADE;
+      DROP TABLE IF EXISTS role CASCADE;
+      DROP TABLE IF EXISTS domain CASCADE;
 
       CREATE TABLE IF NOT EXISTS departments (
         dept_id SERIAL PRIMARY KEY,
@@ -33,7 +36,7 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      
+
     CREATE TABLE IF NOT EXISTS location (
       location_id SERIAL PRIMARY KEY,
       locality VARCHAR(20) UNIQUE NOT NULL,
@@ -45,22 +48,46 @@ const createTables = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    CREATE TABLE IF NOT EXISTS users (
-      user_id SERIAL PRIMARY KEY,
-      first_name VARCHAR(20) NOT NULL,
-      last_name VARCHAR(20) NOT NULL,
-      email VARCHAR(30) UNIQUE NOT NULL,
-      phone_no VARCHAR(15) UNIQUE NOT NULL,
-      password TEXT,
-      dept_name VARCHAR(20) REFERENCES departments(dept_name)  ON DELETE CASCADE,
-      location VARCHAR(20) REFERENCES location(locality)  ON DELETE CASCADE,
-      emp_id VARCHAR(20) NOT NULL,
-      role VARCHAR(20) NOT NULL,
-      password_reset BOOLEAN DEFAULT false,
-      otp_code VARCHAR(6),
-      user_status VARCHAR(10) CHECK (user_status IN ('active', 'inactive')),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    
+    CREATE TABLE IF NOT EXISTS designation (
+      desig_id SERIAL PRIMARY KEY,
+      designation VARCHAR(100) UNIQUE NOT NULL, 
+      description TEXT  -- Description of the designation
     );
+
+
+    CREATE TABLE IF NOT EXISTS role (
+      role_id SERIAL PRIMARY KEY,
+      role VARCHAR(100) UNIQUE NOT NULL,  
+      description TEXT,  -- Description of the role
+      access VARCHAR(100)  -- Access level associated with the role (can store access details)
+    );
+
+
+    CREATE TABLE IF NOT EXISTS domain (
+      dom_id SERIAL PRIMARY KEY,
+      domain_name VARCHAR(100) UNIQUE NOT NULL,
+      description TEXT  
+    );
+
+      CREATE TABLE IF NOT EXISTS users (
+        user_id SERIAL PRIMARY KEY,
+        first_name VARCHAR(20) NOT NULL,
+        last_name VARCHAR(20) NOT NULL,
+        email VARCHAR(30) UNIQUE NOT NULL,
+        phone_no VARCHAR(15) UNIQUE NOT NULL,
+        password TEXT,
+        dept_name VARCHAR(20) REFERENCES departments(dept_name)  ON DELETE CASCADE,
+        location VARCHAR(20) REFERENCES location(locality)  ON DELETE CASCADE,
+        emp_id VARCHAR(20) NOT NULL,
+        role VARCHAR(20) NOT NULL,
+        password_reset BOOLEAN DEFAULT false,
+        otp_code VARCHAR(6),
+        user_status VARCHAR(10) CHECK (user_status IN ('active', 'inactive')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+
       CREATE TABLE IF NOT EXISTS customers (
         customer_id SERIAL PRIMARY KEY,
         customer_name VARCHAR(100) NOT NULL,
@@ -121,7 +148,7 @@ createTables();
 
 
 // Use the same secret key for signing and verifying the tokens
-const JWT_SECRET ="mysecret"; // Use environment variable
+const JWT_SECRET = "mysecret"; // Use environment variable
 
 // Middleware to verify JWT and attach user info to req.user
 const authenticateToken = (req, res, next) => {
@@ -146,7 +173,7 @@ const checkAccess = (apiName) => {
   return async (req, res, next) => {
     const { user_id } = req.user;
     const query = `SELECT * FROM api_access WHERE user_id = $1 AND api_name = $2`;
-    
+
     try {
       const result = await pool.query(query, [user_id, apiName]);
       if (result.rows.length > 0) {
@@ -161,7 +188,7 @@ const checkAccess = (apiName) => {
   };
 };
 
-module.exports = { authenticateToken,checkAccess};
+module.exports = { authenticateToken, checkAccess };
 
 
 
@@ -203,14 +230,14 @@ app.post('/signup', [
     if (password) {
       hashedPassword = await bcrypt.hash(password, 10);
     }
-    
+
     // Check if the user being registered is the superadmin
     const passwordResetValue = email === 'superadmin@gmail.com' ? true : false;
 
     const query = `
       INSERT INTO users (first_name, last_name, email, phone_no, password, dept_name, location, emp_id, role, user_status, password_reset)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`;
-    
+
     const values = [first_name, last_name, email, phone_no, hashedPassword, dept_name, location, emp_id, role, user_status, passwordResetValue];
 
     const result = await pool.query(query, values);
@@ -301,7 +328,7 @@ app.post('/request-otp', async (req, res) => {
 
     const otp = generateOTP();
 
- // Update user table with OTP and expiration time
+    // Update user table with OTP and expiration time
 
     // const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
     // const updateQuery = 'UPDATE users SET otp_code = $1, otp_expires_at = $2 WHERE email = $3';
@@ -346,7 +373,7 @@ app.post('/verify-otp', async (req, res) => {
     //   const clearOtpQuery = 'UPDATE users SET otp_code = NULL, otp_expires_at = NULL WHERE email = $1';
 
 
-// Check if OTP is correct
+    // Check if OTP is correct
     if (user.otp_code === otp) {
       // Clear OTP once verified
       const clearOtpQuery = 'UPDATE users SET otp_code = NULL WHERE email = $1';
@@ -384,7 +411,7 @@ app.post('/reset-password', async (req, res) => {
     res.status(200).json({ message: 'Password updated successfully' });
   } catch (err) {
     console.error('Error resetting password:', err);
-    res.status(500).json({ error: 'Internal server error',message:err.details });
+    res.status(500).json({ error: 'Internal server error', message: err.details });
   }
 });
 
@@ -400,6 +427,11 @@ const apiAccessRoutes = require('./routes/access');
 const customerRoutes = require('./routes/customer');
 const contactRoutes = require('./routes/contacts');
 const locationRoutes = require('./routes/location');
+const designationRouter = require('./routes/designation');
+const roleRouter = require('./routes/role');
+const domainRouter = require('./routes/domain');
+
+
 
 // Use your route files
 app.use('/departments', deptRoutes);
@@ -408,6 +440,11 @@ app.use('/access', apiAccessRoutes);
 app.use('/customers', customerRoutes);
 app.use('/contacts', contactRoutes);
 app.use('/loc', locationRoutes);
+app.use('/designation', designationRouter);
+app.use('/role', roleRouter);
+app.use('/domain', domainRouter);
+
+
 // Centralized error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
