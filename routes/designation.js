@@ -56,7 +56,7 @@ router.delete('/', async (req, res) => {
 
     const client = await pool.connect();
     try {
-        const result = await client.query('DELETE FROM designation WHERE desg_id = $1 RETURNING *', [id]);
+        const result = await client.query('DELETE FROM designation WHERE desig_id = $1 RETURNING *', [id]);
         if (result.rows.length > 0) {
             res.json({ message: 'Designation deleted successfully', designation: result.rows[0] });
         } else {
