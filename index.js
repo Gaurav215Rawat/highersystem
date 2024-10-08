@@ -79,7 +79,7 @@ const createTables = async () => {
         password TEXT,
         dept_name VARCHAR(20) REFERENCES departments(dept_name)  ON DELETE CASCADE,
         location VARCHAR(20) REFERENCES location(locality)  ON DELETE CASCADE,
-        emp_id VARCHAR(20) NOT NULL,
+        emp_id VARCHAR(20) NOT NULL UNIQUE,
         role VARCHAR(20) NOT NULL,
         password_reset BOOLEAN DEFAULT false,
         otp_code VARCHAR(6),
