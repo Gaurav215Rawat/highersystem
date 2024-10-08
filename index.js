@@ -311,7 +311,7 @@ const sendMail = require('./mailConfig'); // Your mail config
 
 // Function to generate a 6-digit OTP
 const generateOTP = () => {
-  return crypto.randomInt(100000, 999999).toString(); // 6-digit OTP
+  return crypto.randomInt(1000, 9999).toString(); // 4-digit OTP
 };
 
 // Function to request OTP and send via email
